@@ -7,9 +7,9 @@ from rich import print
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
-from vla.state.store import load_state
+from vla.state.store import load_state, save_state
 
 PID_FILE = Path.home() / ".vla" / "deamon.pid"
 
@@ -31,6 +31,52 @@ class VLADaemon:
                 "device": self.device,
                 "state": self.state
             }
+        
+        @self.app.get("/policy/list")
+        def policies():
+            return {"policies": self.state["policies"]}
+
+        @self.app.get("/env/list")
+        def envs():
+            return {"envs": self.state["envs"]}
+        
+        @self.app.get("/policy/pull")
+        def pull_policies(name: str):
+            if name not in self.state["policies"]:
+                self.state["policies"].append(name)
+                save_state(self.state)
+            return {"ok": True, "policy": name}
+
+        @self.app.get("/env/pull")
+        def pull_envs(name: str):
+
+            if name not in self.state["envs"]:
+                self.state["envs"].append(name)
+                save_state(self.state)
+            return {"ok": True, "env": name}
+        
+        @self.app.get("/policy/serve")
+        def serve_policies(name: str):
+            if name not in self.state["policies"]:
+                raise HTTPException(status_code=400, detail="Policy not pulled")
+            if name not in self.state.setdefault("served_policies", []):
+                self.state["served_policies"].append(name)
+                save_state(self.state)
+            return {"served": name}
+        
+        @self.app.get("/env/serve")
+        def serve_envs(name: str):
+            if name not in self.state["envs"]:
+                raise HTTPException(status_code=400, detail="Env not pulled")
+            if name not in self.state.setdefault("served_envs", []):
+                self.state["served_envs"].append(name)
+                save_state(self.state)
+            return {"served": name}
+        
+        @self.app.get("/stop")
+        def stop():
+            self._shutdown()
+            return {"stopped": True}
     
     def start(self):
         
