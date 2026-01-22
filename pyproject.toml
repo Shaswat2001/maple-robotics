@@ -3,8 +3,8 @@ name = "vla"
 version = "0.0.1"
 dependencies = ["typer[all]", 
                 "rich",
-                "fastapi" 
-                "uvicorn" 
+                "fastapi",
+                "uvicorn",
                 "requests"
                 ]
 

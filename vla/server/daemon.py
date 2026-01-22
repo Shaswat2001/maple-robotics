@@ -2,8 +2,12 @@ import os
 import sys
 import time
 import signal
+import threading
 from rich import print
 from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI
 
 from vla.state.store import load_state
 
@@ -15,6 +19,18 @@ class VLADaemon:
         self.running = True
         self.port = port
         self.device = device 
+        self.state = load_state()
+
+        self.app = FastAPI(title= "VLA Daemon")
+
+        @self.app.get("/status")
+        def status():
+            return {
+                "running": True,
+                "port": self.port,
+                "device": self.device,
+                "state": self.state
+            }
     
     def start(self):
         
@@ -30,13 +46,21 @@ class VLADaemon:
         f"(port={self.port}, device={self.device})"
         )
 
-        state = load_state()
-        print("[dim]Loaded state:[/dim]", state)
-
         signal.signal(signal.SIGINT, self._shutdown)
         signal.signal(signal.SIGTERM, self._shutdown)
 
+        thread = threading.Thread(target=self._run_api, daemon=True)
+        thread.start()
+
         self._loop()
+
+    def _run_api(self):
+        uvicorn.run(
+            self.app,
+            host="127.0.0.1",
+            port=self.port,
+            log_level="error",
+        )
 
     def _loop(self):
         while self.running:
