@@ -1,7 +1,12 @@
 [project]
 name = "vla"
 version = "0.0.1"
-dependencies = ["typer[all]", "rich"]
+dependencies = ["typer[all]", 
+                "rich",
+                "fastapi" 
+                "uvicorn" 
+                "requests"
+                ]
 
 [project.scripts]
 vla = "vla.cmd.cli:main"

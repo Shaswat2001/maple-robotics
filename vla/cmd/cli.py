@@ -5,6 +5,7 @@ import typer
 from typing import Tuple
 from rich import print
 from vla.state.store import load_state, save_state
+from vla.server.daemon import VLADaemon
 
 app = typer.Typer(no_args_is_help= True)
 
@@ -44,10 +45,12 @@ def pull_env(name: str):
 serve_app = typer.Typer(no_args_is_help=False)
 app.add_typer(serve_app, name="serve")
 
-@serve_app.callback()
+@serve_app.callback(invoke_without_command=True)
 def serve_root(port: int = typer.Option(8080, "--port"),
                device: str = typer.Option("cuda:0", "--device")):
-    print(f"[bold cyan]SERVE DAEMON[/bold cyan] port={port} device={device}")
+    
+    daemon = VLADaemon(port=port, device=device)
+    daemon.start()
 
 @serve_app.command("policy")
 def serve_policy(name: str,
