@@ -36,12 +36,16 @@ def pull_env(name: str, port: int = typer.Option(8080, "--port")):
     requests.post(f"{daemon_url(port)}/env/pull", params={"name": name})
     print(f"[bold green]PULL ENV[/bold green] name={name}")
 
-serve_app = typer.Typer(no_args_is_help=False)
+serve_app = typer.Typer(no_args_is_help=False, invoke_without_command=True)
 app.add_typer(serve_app, name="serve")
 
-@serve_app.callback(invoke_without_command=True)
-def serve_root(port: int = typer.Option(8080, "--port"),
+@serve_app.callback()
+def serve_root(ctx: typer.Context,
+               port: int = typer.Option(8080, "--port"),
                device: str = typer.Option("cuda:0", "--device")):
+    
+    if ctx.invoked_subcommand is not None:
+        return
     
     daemon = VLADaemon(port=port, device=device)
     daemon.start()
@@ -50,7 +54,12 @@ def serve_root(port: int = typer.Option(8080, "--port"),
 def serve_policy(name: str,
                  port: int = typer.Option(8080, "--port")):
     
-    requests.post(f"{daemon_url(port)}/env/serve", params={"name": name})
+    r = requests.post(f"{daemon_url(port)}/policy/serve", params={"name": name})
+    
+    if r.status_code != 200:
+        print(f"[red]Error:[/red] {r.json()['detail']}")
+        raise typer.Exit(1)
+
     print(f"[bold cyan]SERVE POLICY[/bold cyan] name={name}")
 
 @serve_app.command("env")

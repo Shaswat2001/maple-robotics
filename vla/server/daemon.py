@@ -21,6 +21,8 @@ class VLADaemon:
         self.device = device 
         self.state = load_state()
 
+        self.shutdown_event = threading.Event()
+
         self.app = FastAPI(title= "VLA Daemon")
 
         @self.app.get("/status")
@@ -40,14 +42,14 @@ class VLADaemon:
         def envs():
             return {"envs": self.state["envs"]}
         
-        @self.app.get("/policy/pull")
+        @self.app.post("/policy/pull")
         def pull_policies(name: str):
             if name not in self.state["policies"]:
                 self.state["policies"].append(name)
                 save_state(self.state)
             return {"ok": True, "policy": name}
 
-        @self.app.get("/env/pull")
+        @self.app.post("/env/pull")
         def pull_envs(name: str):
 
             if name not in self.state["envs"]:
@@ -55,7 +57,7 @@ class VLADaemon:
                 save_state(self.state)
             return {"ok": True, "env": name}
         
-        @self.app.get("/policy/serve")
+        @self.app.post("/policy/serve")
         def serve_policies(name: str):
             if name not in self.state["policies"]:
                 raise HTTPException(status_code=400, detail="Policy not pulled")
@@ -64,7 +66,7 @@ class VLADaemon:
                 save_state(self.state)
             return {"served": name}
         
-        @self.app.get("/env/serve")
+        @self.app.post("/env/serve")
         def serve_envs(name: str):
             if name not in self.state["envs"]:
                 raise HTTPException(status_code=400, detail="Env not pulled")
@@ -73,9 +75,9 @@ class VLADaemon:
                 save_state(self.state)
             return {"served": name}
         
-        @self.app.get("/stop")
+        @self.app.post("/stop")
         def stop():
-            self._shutdown()
+            self.shutdown_event.set()
             return {"stopped": True}
     
     def start(self):
@@ -92,9 +94,6 @@ class VLADaemon:
         f"(port={self.port}, device={self.device})"
         )
 
-        signal.signal(signal.SIGINT, self._shutdown)
-        signal.signal(signal.SIGTERM, self._shutdown)
-
         thread = threading.Thread(target=self._run_api, daemon=True)
         thread.start()
 
@@ -109,13 +108,18 @@ class VLADaemon:
         )
 
     def _loop(self):
-        while self.running:
-            time.sleep(1)
+        while not self.shutdown_event.is_set():
+            time.sleep(0.2)
 
-    def _shutdown(self, *_):
+        self._cleanup_and_exit()
+
+    def _signal_shutdown(self, *_):
+        self.shutdown_event.set()
+
+    def _cleanup_and_exit(self):
         print("\n[yellow]Shutting down VLA daemon[/yellow]")
-        self.running = False
         if PID_FILE.exists():
             PID_FILE.unlink()
         sys.exit(0)
+
 
