@@ -1,5 +1,7 @@
 import typer 
+import shutil
 import requests
+import subprocess
 from typing import Tuple
 from rich import print
 from vla.server.daemon import VLADaemon
@@ -42,10 +44,35 @@ app.add_typer(serve_app, name="serve")
 @serve_app.callback()
 def serve_root(ctx: typer.Context,
                port: int = typer.Option(8080, "--port"),
-               device: str = typer.Option("cuda:0", "--device")):
+               device: str = typer.Option("cuda:0", "--device"),
+               detach: bool = typer.Option(False, "--detach")):
     
     if ctx.invoked_subcommand is not None:
         return
+    
+    if detach:
+        vla_bin = shutil.which("vla")
+        if vla_bin is None:
+            print("[red]Could not find 'vla' executable in PATH[/red]")
+            raise typer.Exit(1)
+
+        subprocess.Popen(
+            [
+                vla_bin,
+                "serve",
+                "--port",
+                str(port),
+                "--device",
+                device,
+            ],
+            stdout=open("/tmp/vla.out", "a"),
+            stderr=open("/tmp/vla.err", "a"),
+            start_new_session=True,  # important
+        )
+
+        print("[green]VLA daemon started in background[/green]")
+        return
+
     
     daemon = VLADaemon(port=port, device=device)
     daemon.start()
@@ -89,16 +116,30 @@ def run(
     spec: str = typer.Argument(..., help="POLICY@ENV (example: openvla@libero)"),
     task: str = typer.Option(..., "--task"),
     instruction: str = typer.Option("", "--instruction"),
-    max_steps: int = typer.Option(200, "--max-steps", min=1),
-    record_video: bool = typer.Option(True, "--video/--no-video"),
+    port: int = typer.Option(8080, "--port"),
 ):
+    
+    if "@" not in spec:
+        raise typer.BadParameter("Expected POLICY@ENV")
+
     policy, env = parse_policy_env(spec)
-    print(
-        f"[bold magenta]RUN[/bold magenta] policy={policy} env={env} task={task} "
-        f"max_steps={max_steps} video={record_video}"
+    r = requests.post(
+        f"{daemon_url(port)}/run",
+        json={
+            "policy": policy,
+            "env": env,
+            "task": task,
+            "instruction": instruction,
+        },
     )
-    if instruction:
-        print(f"[dim]instruction:[/dim] {instruction}")
+
+    if r.status_code != 200:
+        print(f"[red]Error:[/red] {r.json()['detail']}")
+        raise typer.Exit(1)
+
+    result = r.json()
+    print("[bold green]RUN COMPLETE[/bold green]")
+    print(result)
 
 @app.command("status")
 def status(port: int = typer.Option(8080, "--port")):

@@ -1,17 +1,21 @@
 import os
 import sys
 import time
-import signal
+import uvicorn
 import threading
 from rich import print
 from pathlib import Path
-
-import uvicorn
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
-
 from vla.state.store import load_state, save_state
 
 PID_FILE = Path.home() / ".vla" / "deamon.pid"
+
+class RunRequest(BaseModel):
+    policy: str
+    env: str
+    task: str
+    instruction: str | None = None
 
 class VLADaemon:
 
@@ -33,6 +37,34 @@ class VLADaemon:
                 "device": self.device,
                 "state": self.state
             }
+        
+        @self.app.post("/run")
+        def run(req: RunRequest):
+            
+            if req.policy not in self.state.get("served_policies", {}):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Policy '{req.policy}' not served"
+                )
+
+            if req.env not in self.state.get("served_envs", {}):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Env '{req.env}' not served"
+                )
+
+            # --- dummy execution ---
+            time.sleep(0.5)
+
+            return {
+                "success": True,
+                "policy": req.policy,
+                "env": req.env,
+                "task": req.task,
+                "steps": 123,
+                "reward": 0.92,
+            }
+
         
         @self.app.get("/policy/list")
         def policies():
