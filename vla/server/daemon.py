@@ -8,6 +8,11 @@ from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from vla.state.store import load_state, save_state
+from vla.schedular import Scheduler
+from vla.utils.paths import policy_dir
+from vla.utils.spec import parse_versioned
+from vla.backend.policy.registry import POLICY_BACKENDS
+from vla.backend.envs.registry import ENV_BACKENDS
 
 PID_FILE = Path.home() / ".vla" / "deamon.pid"
 
@@ -17,6 +22,12 @@ class RunRequest(BaseModel):
     task: str
     instruction: str | None = None
 
+class PullPolicyRequest(BaseModel):
+    spec: str  # e.g., "openvla:7b"
+
+class ServePolicyRequest(BaseModel):
+    spec: str  # e.g., "openvla:7b"
+
 class VLADaemon:
 
     def __init__(self, port: int, device: str):
@@ -24,6 +35,8 @@ class VLADaemon:
         self.port = port
         self.device = device 
         self.state = load_state()
+
+        self.schedular = Scheduler()
 
         self.shutdown_event = threading.Event()
 
@@ -52,11 +65,14 @@ class VLADaemon:
                     status_code=400,
                     detail=f"Env '{req.env}' not served"
                 )
+            
+            meta = self.scheduler.submit(req.dict())
 
             # --- dummy execution ---
             time.sleep(0.5)
 
             return {
+                "run_id": meta["run_id"],
                 "success": True,
                 "policy": req.policy,
                 "env": req.env,
@@ -75,28 +91,71 @@ class VLADaemon:
             return {"envs": self.state["envs"]}
         
         @self.app.post("/policy/pull")
-        def pull_policies(name: str):
-            if name not in self.state["policies"]:
-                self.state["policies"].append(name)
-                save_state(self.state)
-            return {"ok": True, "policy": name}
+        def pull_policy(req: PullPolicyRequest):
+            name, version = parse_versioned(req.spec)
+
+            if name not in POLICY_BACKENDS:
+                raise HTTPException(status_code=400, detail=f"Unknown policy backend '{name}'")
+
+            backend = POLICY_BACKENDS[name]()
+
+            dst = policy_dir(name, version)
+            try:
+                manifest = backend.pull(version=version, dst=dst)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=str(e))
+
+            pulled = self.state.setdefault("policies", [])
+            policy_id = f"{name}:{version}"
+            if policy_id not in pulled:
+                pulled.append(policy_id)
+
+            # optional: store manifests
+            self.state.setdefault("policy_manifests", {})[policy_id] = manifest
+            save_state(self.state)
+
+            return {"pulled": policy_id, "manifest": manifest}
 
         @self.app.post("/env/pull")
         def pull_envs(name: str):
 
+            if name not in ENV_BACKENDS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown env backend '{name}'"
+                )
+
             if name not in self.state["envs"]:
                 self.state["envs"].append(name)
                 save_state(self.state)
-            return {"ok": True, "env": name}
+            return {"env": name, "info": ENV_BACKENDS[name]().info()}
         
         @self.app.post("/policy/serve")
-        def serve_policies(name: str):
-            if name not in self.state["policies"]:
-                raise HTTPException(status_code=400, detail="Policy not pulled")
-            if name not in self.state.setdefault("served_policies", []):
-                self.state["served_policies"].append(name)
+        def serve_policy(req: ServePolicyRequest):
+            name, version = parse_versioned(req.spec)
+            policy_id = f"{name}:{version}"
+
+            if policy_id not in self.state.get("policies", []):
+                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled")
+
+            if name not in POLICY_BACKENDS:
+                raise HTTPException(status_code=400, detail=f"Unknown policy backend '{name}'")
+
+            backend = POLICY_BACKENDS[name]()
+            model_path = policy_dir(name, version)
+
+            # torch init stub happens here
+            try:
+                backend.load(version=version, model_path=model_path, device=self.device)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to load '{policy_id}': {e}")
+
+            served = self.state.setdefault("served_policies", [])
+            if policy_id not in served:
+                served.append(policy_id)
                 save_state(self.state)
-            return {"served": name}
+
+            return {"served": policy_id}
         
         @self.app.post("/env/serve")
         def serve_envs(name: str):

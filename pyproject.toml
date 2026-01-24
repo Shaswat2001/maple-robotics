@@ -5,8 +5,8 @@ dependencies = ["typer[all]",
                 "rich",
                 "fastapi",
                 "uvicorn",
-                "requests"
-                ]
+                "requests",
+                "huggingface_hub"]
 
 [project.scripts]
 vla = "vla.cmd.cli:main"

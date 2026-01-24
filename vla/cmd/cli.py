@@ -30,7 +30,12 @@ app.add_typer(pull_app, name="pull")
 
 @pull_app.command("policy")
 def pull_policy(name: str, port: int = typer.Option(8080, "--port")):
-    r = requests.post(f"{daemon_url(port)}/policy/pull", params={"name": name})
+    r = requests.post(f"{daemon_url(port)}/policy/pull", json={"spec": name})
+
+    if r.status_code != 200:
+        print(f"[red]Error:[/red] {r.json()['detail']}")
+        raise typer.Exit(1)
+    
     print(f"[green]PULLED policy[/green] {name}")
 
 @pull_app.command("env")
@@ -81,7 +86,7 @@ def serve_root(ctx: typer.Context,
 def serve_policy(name: str,
                  port: int = typer.Option(8080, "--port")):
     
-    r = requests.post(f"{daemon_url(port)}/policy/serve", params={"name": name})
+    r = requests.post(f"{daemon_url(port)}/policy/serve", json={"spec": name})
     
     if r.status_code != 200:
         print(f"[red]Error:[/red] {r.json()['detail']}")
