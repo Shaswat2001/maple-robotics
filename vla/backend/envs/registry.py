@@ -1,5 +1,5 @@
-from vla.backend.envs.libero import LiberoEnv
+from vla.backend.envs.libero import LiberoEnvBackend
 
 ENV_BACKENDS = {
-    "libero": LiberoEnv,
+    "libero": LiberoEnvBackend,
 }

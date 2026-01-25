@@ -7,7 +7,7 @@ from rich import print
 from vla.server.daemon import VLADaemon
 
 def daemon_url(port: int):
-    return f"http://127.0.0.1:{port}"
+    return f"http://0.0.0.0:{port}"
 
 app = typer.Typer(no_args_is_help= True)
 
@@ -149,7 +149,7 @@ def run(
 @app.command("status")
 def status(port: int = typer.Option(8080, "--port")):
     try:
-        r = requests.get(f"http://127.0.0.1:{port}/status", timeout=1)
+        r = requests.get(f"http://0.0.0.0:{port}/status", timeout=1)
         data = r.json()
         print("[bold green]VLA daemon running[/bold green]")
         print(data)

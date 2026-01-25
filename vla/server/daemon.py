@@ -44,11 +44,17 @@ class VLADaemon:
 
         @self.app.get("/status")
         def status():
+
+            status = self.state.copy()
+            for name, data in status.items():
+
+                if "backend" in data:
+                    del data["backend"]
             return {
                 "running": True,
                 "port": self.port,
                 "device": self.device,
-                "state": self.state
+                "state": status
             }
         
         @self.app.post("/run")
@@ -124,22 +130,33 @@ class VLADaemon:
                     status_code=400,
                     detail=f"Unknown env backend '{name}'"
                 )
+            
+            backend = ENV_BACKENDS[name]()
+
+            try:
+                meta = backend.pull()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=str(e)
+                )
+
 
             if name not in self.state["envs"]:
                 self.state["envs"].append(name)
                 save_state(self.state)
-            return {"env": name, "info": ENV_BACKENDS[name]().info()}
+            return {"env": name, "meta": meta}
         
         @self.app.post("/policy/serve")
         def serve_policy(req: ServePolicyRequest):
             name, version = parse_versioned(req.spec)
             policy_id = f"{name}:{version}"
 
-            if policy_id not in self.state.get("policies", []):
-                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled")
-
             if name not in POLICY_BACKENDS:
                 raise HTTPException(status_code=400, detail=f"Unknown policy backend '{name}'")
+
+            if policy_id not in self.state.get("policies", []):
+                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled")
 
             backend = POLICY_BACKENDS[name]()
             model_path = policy_dir(name, version)
@@ -153,18 +170,28 @@ class VLADaemon:
             served = self.state.setdefault("served_policies", [])
             if policy_id not in served:
                 served.append(policy_id)
-                save_state(self.state)
 
             return {"served": policy_id}
         
         @self.app.post("/env/serve")
-        def serve_envs(name: str):
+        def serve_envs(name: str, num_envs: int = 1):
             if name not in self.state["envs"]:
                 raise HTTPException(status_code=400, detail="Env not pulled")
             if name not in self.state.setdefault("served_envs", []):
-                self.state["served_envs"].append(name)
-                save_state(self.state)
-            return {"served": name}
+                self.state["served_envs"][name] = {}
+
+            backend = ENV_BACKENDS[name]()
+            handles = backend.serve(num_envs)
+
+            self.state["served_envs"][name] = {
+                "backend": backend,
+                "handles": handles,
+            }
+
+            return {
+                "served": name,
+                "instances": handles,
+            }
         
         @self.app.post("/stop")
         def stop():
@@ -193,7 +220,7 @@ class VLADaemon:
     def _run_api(self):
         uvicorn.run(
             self.app,
-            host="127.0.0.1",
+            host="0.0.0.0",
             port=self.port,
             log_level="error",
         )
@@ -209,8 +236,15 @@ class VLADaemon:
 
     def _cleanup_and_exit(self):
         print("\n[yellow]Shutting down VLA daemon[/yellow]")
+
+        for env, data in self.state["served_envs"].items():
+            if "backend" in data:
+                backend = data["backend"]
+                backend.stop(data["handles"])
+
         if PID_FILE.exists():
             PID_FILE.unlink()
+        
         sys.exit(0)
 
 

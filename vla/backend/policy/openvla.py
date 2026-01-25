@@ -40,10 +40,20 @@ class OpenVLAPolicy(PolicyBackend):
             "repo": repo,
             "path": str(dst),
         }
+    
+    def load(self, version: str, model_path: Path, device: str) -> None:
+        # Torch init stub: proves GPU/CPU device wiring works
+        # if device.startswith("cuda") and not torch.cuda.is_available():
+        #     raise RuntimeError("CUDA device requested but torch.cuda.is_available() is False")
 
-    def load(self):
-        # later: load model weights
-        print("[OpenVLA] loaded (stub)")
+        # # Allocate something tiny on target device
+        # _ = torch.zeros(1, device=device)
+
+        # NOTE: real load later:
+        # - load config/tokenizer
+        # - load weights
+        # - set eval mode, etc.
+        print(f"[OpenVLA] load stub OK: version={version} path={model_path} device={device}")
 
     def act(self, observation: dict) -> dict:
         # dummy action

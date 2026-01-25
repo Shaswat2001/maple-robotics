@@ -6,7 +6,8 @@ dependencies = ["typer[all]",
                 "fastapi",
                 "uvicorn",
                 "requests",
-                "huggingface_hub"]
+                "huggingface_hub",
+                "docker"]
 
 [project.scripts]
 vla = "vla.cmd.cli:main"
