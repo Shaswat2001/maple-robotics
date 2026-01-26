@@ -36,7 +36,7 @@ class VLADaemon:
         self.device = device 
         self.state = load_state()
 
-        self.schedular = Scheduler()
+        self.scheduler = Scheduler()
 
         self.shutdown_event = threading.Event()
 
@@ -177,7 +177,7 @@ class VLADaemon:
         def serve_envs(name: str, num_envs: int = 1):
             if name not in self.state["envs"]:
                 raise HTTPException(status_code=400, detail="Env not pulled")
-            if name not in self.state.setdefault("served_envs", []):
+            if name not in self.state.setdefault("served_envs", {}):
                 self.state["served_envs"][name] = {}
 
             backend = ENV_BACKENDS[name]()
