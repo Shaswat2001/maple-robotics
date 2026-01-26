@@ -100,8 +100,16 @@ def serve_env(name: str,
               num_envs: int = typer.Option(1, "--num-envs", min=1),
               headless: bool = typer.Option(True, "--headless/--gui")):
     
-    requests.post(f"{daemon_url(port)}/env/serve", params={"name": name, "num_envs": num_envs})
-    print(f"[bold cyan]SERVE ENV[/bold cyan] name={name} num_envs={num_envs} headless={headless}")
+    r = requests.post(f"{daemon_url(port)}/env/serve", json={"name": name, "num_envs": num_envs})
+
+    if r.status_code != 200:
+        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        raise typer.Exit(1)
+    
+    data = r.json()
+    print(f"[green] Serving env:[/green] {name} ({data['num_envs']} instance(s))")
+    for env_id in data.get("env_ids", []):
+        print(f"  • {env_id}")
 
 list_app = typer.Typer(no_args_is_help=True)
 app.add_typer(list_app, name="list")
