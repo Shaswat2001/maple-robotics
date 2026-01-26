@@ -103,8 +103,21 @@ class LiberoEnvBackend(EnvBackend):
                 
                 # Reload to get port mapping
                 container.reload()
-                port_info = container.attrs["NetworkSettings"]["Ports"]
-                host_port = int(port_info[f"{self.CONTAINER_PORT}/tcp"][0]["HostPort"])
+
+                host_port = None
+                for attempt in range(10):
+                    container.reload()
+                    port_info = container.attrs["NetworkSettings"]["Ports"]
+                    port_key = f"{self.CONTAINER_PORT}/tcp"
+                    
+                    if port_info and port_key in port_info and port_info[port_key]:
+                        host_port = int(port_info[port_key][0]["HostPort"])
+                        break
+                    
+                    time.sleep(0.5)
+                
+                if host_port is None:
+                    raise RuntimeError(f"Could not get port mapping for container {env_id}")
                 
                 handle = EnvHandle(
                     env_id=env_id,
