@@ -2,7 +2,7 @@ import typer
 import shutil
 import requests
 import subprocess
-from typing import Tuple
+from typing import Tuple, Optional
 from rich import print
 from vla.server.daemon import VLADaemon
 
@@ -84,15 +84,27 @@ def serve_root(ctx: typer.Context,
 
 @serve_app.command("policy")
 def serve_policy(name: str,
-                 port: int = typer.Option(8080, "--port")):
+                 port: int = typer.Option(8080, "--port"),
+                 device: str = typer.Option("cuda:0", "--device", "-d"),
+                 host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port"),
+                 attn: str = typer.Option("sdpa", "--attn", "-a", help="Attention: flash_attention_2, sdpa, eager")):
     
-    r = requests.post(f"{daemon_url(port)}/policy/serve", json={"spec": name})
+    payload = {"spec": name, "device": device, "attn_implementation": attn}
+    if host_port is not None:
+        payload["host_port"] = host_port
+    
+    r = requests.post(f"{daemon_url(port)}/policy/serve", json=payload)
     
     if r.status_code != 200:
         print(f"[red]Error:[/red] {r.json()['detail']}")
         raise typer.Exit(1)
-
-    print(f"[bold cyan]SERVE POLICY[/bold cyan] name={name}")
+    
+    data = r.json()
+    print(f"[green]✓ Serving policy:[/green] {name}")
+    print(f"  Policy ID: {data.get('policy_id')}")
+    print(f"  Port: http://localhost:{data.get('port')}")
+    print(f"  Device: {data.get('device')}")
+    print(f"  Attention: {data.get('attn_implementation')}")
 
 @serve_app.command("env")
 def serve_env(name: str,

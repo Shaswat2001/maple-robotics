@@ -39,6 +39,8 @@ class OpenVLAPolicy(PolicyBackend):
 
         dst.mkdir(parents=True, exist_ok=True)
 
+        self.pull_image()
+
         print(f"[OpenVLA] Downloading {repo} to {dst}...")
 
         snapshot_download(
@@ -85,7 +87,7 @@ class OpenVLAPolicy(PolicyBackend):
         else:
             port_mapping = {f"{self.CONTAINER_PORT}/tcp": None}
 
-        device_request = []
+        device_requests = []
         gpu_idx = "0"
         if device.startswith("cuda"):
             gpu_idx = device.split(":")[-1] if ":" in device else "0"

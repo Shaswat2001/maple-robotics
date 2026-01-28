@@ -13,8 +13,7 @@ from vla.state.store import load_state, save_state
 from vla.scheduler import Scheduler
 from vla.utils.paths import policy_dir
 from vla.utils.spec import parse_versioned
-from vla.backend.policy.registry import POLICY_BACKENDS
-from vla.backend.envs.registry import ENV_BACKENDS
+from vla.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
 from vla.backend.envs.base import EnvHandle
 
 PID_FILE = Path.home() / ".vla" / "daemon.pid"
@@ -33,12 +32,25 @@ class PullPolicyRequest(BaseModel):
 
 class ServePolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
+    device: str = "cuda:0"
+    host_port: Optional[int] = None
+    attn_implementation: str = "sdpa"
 
+class ActRequest(BaseModel):
+    policy_id: str
+    image: str  # base64 encoded
+    instruction: str
+    unnorm_key: Optional[str] = None
+
+class ActBatchRequest(BaseModel):
+    policy_id: str
+    image: List[str]  # base64 encoded
+    instruction: List[str]
+    unnorm_key: Optional[str] = None
 
 class ServeEnvRequest(BaseModel):
     name: str
     num_envs: int = 1
-
 
 class SetupEnvRequest(BaseModel):
     env_id: str
@@ -72,6 +84,9 @@ class VLADaemon:
         # Track env backends and handles
         self._env_backends = {}  # name -> backend instance
         self._env_handles = {}   # env_id -> (backend_name, EnvHandle)
+
+        self._policy_backends = {}  # name -> backend instance
+        self._policy_handles = {}   # policy_id -> (backend_name, PolicyHandle)
 
         self.shutdown_event = threading.Event()
 
@@ -193,20 +208,97 @@ class VLADaemon:
                 raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled")
 
             backend = POLICY_BACKENDS[name]()
+            self._policy_backends[name] = backend
+
             model_path = policy_dir(name, version)
 
             # torch init stub happens here
             try:
-                backend.load(version=version, model_path=model_path, device=self.device)
+                handle = backend.serve(
+                    version=version,
+                    model_path=model_path,
+                    device=req.device,
+                    host_port=req.host_port,
+                    attn_implementation=req.attn_implementation
+                )
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Failed to load '{policy_id}': {e}")
 
-            served = self.state.setdefault("served_policies", [])
-            if policy_id not in served:
-                served.append(policy_id)
+            self._policy_handles[handle.policy_id] = (name, handle)
+            served = self.state.setdefault("served_policies", {})
+            served[handle.policy_id] = handle.to_dict()
 
-            return {"served": policy_id}
+            return {
+                "served": policy_id,
+                "policy_id": handle.policy_id,
+                "port": handle.port,
+                "device": handle.device,
+                "attn_implementation": handle.metadata.get("attn_implementation"),
+            }
         
+        @self.app.post("/policy/act")
+        def policy_act(req: ActRequest):
+
+            if req.policy_id not in self._policy_handles:
+                raise HTTPException(status_code=400, detail=f"Policy '{req.policy_id}' not found. Available: {list(self._policy_handles.keys())}")
+
+            backend_name, handle = self._policy_handles[req.policy_id]
+            backend = self._policy_backends[backend_name]
+
+            try:
+                action = backend.act(
+                    handle=handle,
+                    image=req.image,  # Already base64
+                    instruction=req.instruction,
+                    unnorm_key=req.unnorm_key,
+                )
+
+                return {"action": action}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/policy/info/{policy_id}")
+        def get_policy_info(policy_id: str):
+            if policy_id not in self._policy_handles:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Policy '{policy_id}' not found"
+                )
+            
+            backend_name, handle = self._policy_handles[policy_id]
+            backend = self._policy_backends[backend_name]
+            
+            try:
+                return backend.get_info(handle)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.post("/policy/stop/{policy_id}")
+        def stop_policy(policy_id: str):
+            if policy_id not in self._policy_handles:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Policy '{policy_id}' not found"
+                )
+            
+            backend_name, handle = self._policy_handles[policy_id]
+            backend = self._policy_backends.get(backend_name)
+            
+            if backend:
+                try:
+                    backend.stop(handle)
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+            
+            del self._policy_handles[policy_id]
+            
+            # Update state
+            if policy_id in self.state.get("served_policies", {}):
+                del self.state["served_policies"][policy_id]
+                save_state(self.state)
+            
+            return {"stopped": policy_id}
+
         @self.app.post("/env/serve")
         def serve_env(req: ServeEnvRequest):
 
@@ -413,6 +505,15 @@ class VLADaemon:
 
     def _cleanup_and_exit(self):
         print("\n[yellow]Shutting down VLA daemon[/yellow]")
+        
+        for policy_id, (backend_name, handle) in list(self._policy_handles.items()):
+            backend = self._policy_handles.get(backend_name)
+            if backend:
+                try:
+                    backend.stop([handle])
+                    print(f"  Stopped policy: {policy_id}")
+                except Exception as e:
+                    print(f"  [red]Failed to stop {policy_id}: {e}[/red]")
 
         # Stop all env containers
         for env_id, (backend_name, handle) in list(self._env_handles.items()):

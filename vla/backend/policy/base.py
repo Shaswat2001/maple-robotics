@@ -108,7 +108,6 @@ class PolicyBackend(ABC):
         pass
 
     def stop(self, handle: PolicyHandle) -> None:
-
         if handle.container_id:
             try:
                 container = self.client.containers.get(handle.container_id)

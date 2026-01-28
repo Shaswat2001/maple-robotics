@@ -7,7 +7,7 @@ STATE_FILE = STATE_DIR / "state.json"
 DEFAULT_STATE = {
     "policies": [],
     "envs": [],
-    "served_policies": [],
+    "served_policies": {},
     "served_envs": {},   # name -> num_envs
 }
 

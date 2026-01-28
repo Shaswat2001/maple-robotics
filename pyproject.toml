@@ -1,11 +1,13 @@
 [project]
 name = "vla"
 version = "0.0.1"
-dependencies = ["typer[all]", 
+dependencies = ["typer", 
                 "rich",
                 "fastapi",
                 "uvicorn",
                 "requests",
+                "numpy",
+                "pillow",
                 "huggingface_hub",
                 "docker"]
 
