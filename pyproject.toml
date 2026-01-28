@@ -12,4 +12,4 @@ dependencies = ["typer",
                 "docker"]
 
 [project.scripts]
-vla = "vla.cmd.cli:main"
+vla = "vla.cmd.vla_cli:main"
