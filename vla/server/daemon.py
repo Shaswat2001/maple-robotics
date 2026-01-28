@@ -272,7 +272,7 @@ class VLADaemon:
                 return backend.get_info(handle)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
-        
+            
         @self.app.post("/policy/stop/{policy_id}")
         def stop_policy(policy_id: str):
             if policy_id not in self._policy_handles:
@@ -432,6 +432,7 @@ class VLADaemon:
         
         @self.app.post("/env/stop/{env_id}")
         def stop_single_env(env_id: str):
+
             if env_id not in self._env_handles:
                 raise HTTPException(
                     status_code=400,
@@ -458,6 +459,32 @@ class VLADaemon:
                 save_state(self.state)
             
             return {"stopped": env_id}
+        
+        @self.app.post("/env/stop")
+        def stop_env():
+            
+            for env_id in list(self._env_handles.keys()):
+            
+                backend_name, handle = self._env_handles[env_id]
+                backend = self._env_backends.get(backend_name)
+                
+                if backend:
+                    try:
+                        backend.stop([handle])
+                    except Exception as e:
+                        raise HTTPException(status_code=500, detail=str(e))
+                
+                del self._env_handles[env_id]
+            
+                # Update state
+                if backend_name in self.state.get("served_envs", {}):
+                    handles = self.state["served_envs"][backend_name].get("handles", [])
+                    self.state["served_envs"][backend_name]["handles"] = [
+                        h for h in handles if h.get("env_id") != env_id
+                    ]
+                    save_state(self.state)
+            
+            return {"stopped": True}
         
         @self.app.post("/stop")
         def stop():
@@ -511,9 +538,9 @@ class VLADaemon:
             if backend:
                 try:
                     backend.stop(handle)
-                    print(f"\n[yellow]Stopped policy: {policy_id}[/yellow]")
+                    print(f"[yellow]Stopped policy: {policy_id}[/yellow]")
                 except Exception as e:
-                    print(f"\n[red]Failed to stop {policy_id}: {e}[/red]")
+                    print(f"[red]Failed to stop {policy_id}: {e}[/red]")
 
         # Stop all env containers
         for env_id, (backend_name, handle) in list(self._env_handles.items()):
@@ -521,9 +548,9 @@ class VLADaemon:
             if backend:
                 try:
                     backend.stop([handle])
-                    print(f"\n[yellow]Stopped env: {env_id}[/yellow]")
+                    print(f"[yellow]Stopped env: {env_id}[/yellow]")
                 except Exception as e:
-                    print(f"\n[red]Failed to stop {env_id}: {e}[/red]")
+                    print(f"[red]Failed to stop {env_id}: {e}[/red]")
 
         if PID_FILE.exists():
             PID_FILE.unlink()

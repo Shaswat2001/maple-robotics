@@ -25,6 +25,7 @@ def parse_policy_env(spec: str) -> Tuple[str, str]:
         raise typer.BadParameter("Invalid POLICY@ENV")
     return policy, env
 
+# ---------- PULL ----------
 pull_app = typer.Typer(no_args_is_help=True)
 app.add_typer(pull_app, name="pull")
 
@@ -43,6 +44,7 @@ def pull_env(name: str, port: int = typer.Option(8080, "--port")):
     requests.post(f"{daemon_url(port)}/env/pull", params={"name": name})
     print(f"[bold green]PULL ENV[/bold green] name={name}")
 
+# ---------- SERVE ----------
 serve_app = typer.Typer(no_args_is_help=False, invoke_without_command=True)
 app.add_typer(serve_app, name="serve")
 
@@ -123,6 +125,7 @@ def serve_env(name: str,
     for env_id in data.get("env_ids", []):
         print(f"  • {env_id}")
 
+# ---------- LIST ----------
 list_app = typer.Typer(no_args_is_help=True)
 app.add_typer(list_app, name="list")
 
@@ -135,6 +138,22 @@ def list_policy(port: int = typer.Option(8080, "--port")):
 def list_env(port: int = typer.Option(8080, "--port")):
     r = requests.get(f"{daemon_url(port)}/env/list")
     print("[yellow]Policies:[/yellow]", r.json()["envs"])
+
+# ---------- ENV ----------
+env_app = typer.Typer(no_args_is_help=True)
+app.add_typer(env_app, name="env")
+
+@env_app.command("stop")
+def stop_env(port: int = typer.Option(8080, "--port"), env_id: str = typer.Option(None, "--id")):
+
+    if env_id is None:
+        requests.post(f"{daemon_url(port)}/env/stop")
+        print("[green]All env stopped[/green]")
+    else:
+        requests.post(f"{daemon_url(port)}/env/stop/{env_id}",params={"env_id": env_id})
+        print(f"[green]Env {env_id} stopped[/green]")
+
+# ---------- POLICY ----------
 
 @app.command("run")
 def run(
