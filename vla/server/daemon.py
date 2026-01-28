@@ -507,13 +507,13 @@ class VLADaemon:
         print("\n[yellow]Shutting down VLA daemon[/yellow]")
         
         for policy_id, (backend_name, handle) in list(self._policy_handles.items()):
-            backend = self._policy_handles.get(backend_name)
+            backend = self._policy_backends.get(backend_name)
             if backend:
                 try:
-                    backend.stop([handle])
-                    print(f"  Stopped policy: {policy_id}")
+                    backend.stop(handle)
+                    print(f"\n[yellow]Stopped policy: {policy_id}[/yellow]")
                 except Exception as e:
-                    print(f"  [red]Failed to stop {policy_id}: {e}[/red]")
+                    print(f"\n[red]Failed to stop {policy_id}: {e}[/red]")
 
         # Stop all env containers
         for env_id, (backend_name, handle) in list(self._env_handles.items()):
@@ -521,9 +521,9 @@ class VLADaemon:
             if backend:
                 try:
                     backend.stop([handle])
-                    print(f"  Stopped env: {env_id}")
+                    print(f"\n[yellow]Stopped env: {env_id}[/yellow]")
                 except Exception as e:
-                    print(f"  [red]Failed to stop {env_id}: {e}[/red]")
+                    print(f"\n[red]Failed to stop {env_id}: {e}[/red]")
 
         if PID_FILE.exists():
             PID_FILE.unlink()
