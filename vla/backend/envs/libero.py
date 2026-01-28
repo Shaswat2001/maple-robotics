@@ -57,8 +57,6 @@ class LiberoEnvBackend(EnvBackend):
                 "source": "pulled",
             }
         except APIError:
-            # If pull fails, try to build locally
-            # This requires the Dockerfile to be present
             pass
         
         # Check if image exists locally
@@ -101,11 +99,8 @@ class LiberoEnvBackend(EnvBackend):
                     },
                 )
                 
-                # Reload to get port mapping
-                container.reload()
-
                 host_port = None
-                for attempt in range(10):
+                for _ in range(10):
                     container.reload()
                     port_info = container.attrs["NetworkSettings"]["Ports"]
                     port_key = f"{self.CONTAINER_PORT}/tcp"
