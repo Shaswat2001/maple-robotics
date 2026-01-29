@@ -2,30 +2,15 @@ import typer
 import requests
 from rich import print
 from typing import Tuple
-from vla.cmd.cli.misc import daemon_url
+from vla.cmd.cli.misc import daemon_url, parse_policy_env
 from vla.cmd.cli import pull_app, serve_app, list_app, env_app
 
 app = typer.Typer(no_args_is_help= True)
-
-def parse_policy_env(spec: str) -> Tuple[str, str]:
-    """
-    Parses 'policy@env' shorthand. Example: 'openvla@libero'
-    """
-
-    if "@" not in spec:
-        raise typer.BadParameter("Expected POLICY@ENV (example: openvla@libero)")
-    
-    policy, env = spec.split("@", 1)
-    policy, env = policy.strip(), env.strip()
-    if not policy or not env:
-        raise typer.BadParameter("Invalid POLICY@ENV")
-    return policy, env
 
 app.add_typer(pull_app, name="pull")
 app.add_typer(serve_app, name="serve")
 app.add_typer(list_app, name="list")
 app.add_typer(env_app, name="env")
-# ---------- ENV ----------
 
 @app.command("run")
 def run(
