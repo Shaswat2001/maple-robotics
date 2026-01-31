@@ -211,7 +211,7 @@ class OpenVLAPolicy(PolicyBackend):
             payload["unnorm_key"] = unnorm_key
         
         try:
-            resp = requests.post(f"{base_url}/act", json=payload, timeout=30)
+            resp = requests.post(f"{base_url}/act", json=payload, timeout=300)
             resp.raise_for_status()
             return resp.json()["action"]
         except requests.exceptions.RequestException as e:

@@ -58,10 +58,10 @@ def run(
         r = requests.post(
             f"{daemon_url(port)}/run",
             json=payload,
-            timeout=max_steps * 2,  # Generous timeout
+            timeout=max_steps * 300,  # Generous timeout
         )
     except requests.exceptions.Timeout:
-        print(f"[red]Error:[/red] Request timed out after {max_steps * 2}s")
+        print(f"[red]Error:[/red] Request timed out after {max_steps * 300}s")
         raise typer.Exit(1)
 
     if r.status_code != 200:
