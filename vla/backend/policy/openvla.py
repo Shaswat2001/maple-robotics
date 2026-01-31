@@ -196,7 +196,7 @@ class OpenVLAPolicy(PolicyBackend):
     def act(
         self, 
         handle: PolicyHandle, 
-        image: Any, 
+        payload: Any, 
         instruction: str,
         unnorm_key: Optional[str] = None,
     ) -> List[float]:
@@ -204,7 +204,7 @@ class OpenVLAPolicy(PolicyBackend):
         base_url = self._get_base_url(handle)
         
         payload = {
-            "image": self._encode_image(image),
+            "image": self._encode_image(payload["image"]),
             "instruction": instruction,
         }
         if unnorm_key:

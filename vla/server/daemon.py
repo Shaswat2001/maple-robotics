@@ -1,34 +1,41 @@
 import os
 import sys
+import uuid
 import time
+import base64
+import numpy as np
+import mediapy
 import signal
 import uvicorn
 import threading
+from tqdm import tqdm
 from typing import Optional, List
 from rich import print
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from vla.state.store import load_state, save_state
+from vla.adapters import get_adapter
 from vla.scheduler import Scheduler
 from vla.utils.paths import policy_dir
 from vla.utils.spec import parse_versioned
 from vla.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
-from vla.backend.envs.base import EnvHandle
 
 PID_FILE = Path.home() / ".vla" / "daemon.pid"
 
-
 class RunRequest(BaseModel):
-    policy: str
-    env: str
+    policy_id: str
+    env_id: str
     task: str
     instruction: Optional[str] = None
-
+    max_steps: int = 300
+    seed: Optional[int] = None
+    unnorm_key: Optional[str] = None
+    save_video: bool = False
+    video_path: Optional[str] = None
 
 class PullPolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
-
 
 class ServePolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
@@ -100,6 +107,7 @@ class VLADaemon:
 
                 if "backend" in data:
                     del data["backend"]
+            
             return {
                 "running": True,
                 "port": self.port,
@@ -110,34 +118,127 @@ class VLADaemon:
         @self.app.post("/run")
         def run(req: RunRequest):
             
-            if req.policy not in self.state.get("served_policies", []):
+            if req.policy_id not in self._policy_handles:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Policy '{req.policy}' not served"
+                    detail=f"Policy '{req.policy_id}' not found. Available: {list(self._policy_handles.keys())}"
                 )
 
-            if req.env not in self.state.get("served_envs", {}):
+            if req.env_id not in self._env_handles:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Env '{req.env}' not served"
+                    detail=f"Env '{req.env_id}' not found. Available: {list(self._env_handles.keys())}"
                 )
             
-            meta = self.scheduler.submit(req.model_dump())
+            policy_backend_name, policy_handle = self._policy_handles[req.policy_id]
+            policy_backend = self._policy_backends[policy_backend_name]
 
-            # --- dummy execution ---
-            time.sleep(0.5)
+            env_backend_name, env_handle = self._env_handles[req.env_id]
+            env_backend = self._env_backends[env_backend_name]
 
-            return {
-                "run_id": meta["run_id"],
-                "success": True,
-                "policy": req.policy,
-                "env": req.env,
-                "task": req.task,
-                "steps": 123,
-                "reward": 0.92,
-            }
+            try:
+                adapter = get_adapter(policy=policy_backend_name, env=env_backend_name)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to load adapter: {e}"
+                )
 
-        
+            run_id = f"run-{uuid.uuid4().hex[:8]}"
+
+            try:
+                setup_result = env_backend.setup(
+                    handle= env_handle,
+                    task= req.task,
+                    seed= req.seed
+                )
+
+                instruction = req.instruction or setup_result.get("instruction", "")
+                if not instruction:
+                    raise HTTPException(status_code=400, detail="No instruction provided and task has no default instruction")
+                
+                observation = env_backend.reset(handle=env_handle, seed=req.seed).get("observation", {})
+                total_reward = 0
+                frames = []
+
+                for step in tqdm(range(req.max_steps)):                    
+                    try:
+                        payload = adapter.transform_obs(observation)
+
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"Failed to transform observation: {e}. Keys: {list(observation.keys())}"
+                        )
+                    if req.save_video:
+                        frames.append(self.get_image(payload))
+
+                    raw_action = policy_backend.act(
+                        handle=policy_handle,
+                        payload=payload,  # base64 encoded, resized by adapter
+                        instruction=instruction,
+                        unnorm_key=req.unnorm_key,
+                    )
+                    
+                    # Transform action using adapter
+                    env_action = adapter.transform_action(raw_action)
+                    
+                    # Step environment with transformed action
+                    step_result = env_backend.step(handle=env_handle, action=env_action)
+                    
+                    observation = step_result.get("observation", {})
+                    reward = step_result.get("reward", 0.0)
+                    terminated = step_result.get("terminated", False)
+                    truncated = step_result.get("truncated", False)
+                    
+                    total_reward += reward
+                    
+                    # Check if done
+                    if terminated or truncated:
+                        break
+                
+                video_saved_path = None
+                if req.save_video and frames:
+                    try:                        
+                        # Determine output path
+                        if req.video_path:
+                            output_path = Path(req.video_path)
+                        else:
+                            output_path = Path.home() / ".vla" / "videos" / f"{run_id}.mp4"
+                        
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        mediapy.write_video(output_path, frames, fps=15)
+                        video_saved_path = str(output_path)
+
+                    except Exception as video_err:
+                        print(f"Warning: Failed to save video: {video_err}")
+                
+                return {
+                    "run_id": run_id,
+                    "success": terminated,
+                    "policy_id": req.policy_id,
+                    "env_id": req.env_id,
+                    "task": req.task,
+                    "instruction": instruction,
+                    "steps": step,
+                    "total_reward": total_reward,
+                    "terminated": terminated,
+                    "truncated": truncated,
+                    "video_path": video_saved_path,
+                    "adapter": adapter.get_info(),
+                }
+            
+            except HTTPException:
+                raise
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Run failed: {str(e)}"
+                )
+
         @self.app.get("/policy/list")
         def policies():
             return {"policies": self.state["policies"]}
@@ -295,7 +396,8 @@ class VLADaemon:
             # Update state
             if policy_id in self.state.get("served_policies", {}):
                 del self.state["served_policies"][policy_id]
-                save_state(self.state)
+            
+            save_state(self.state)
             
             return {"stopped": policy_id}
 
@@ -520,6 +622,16 @@ class VLADaemon:
             port=self.port,
             log_level="error",
         )
+
+    def get_image(self, payload):
+
+        images = []
+        for key, val in payload.items():
+            if "image" in key:
+                images.append(np.array(val))
+        
+        images = np.concatenate(images, axis=1)
+        return images
 
     def _loop(self):
         while not self.shutdown_event.is_set():

@@ -9,7 +9,11 @@ dependencies = ["typer",
                 "numpy",
                 "pillow",
                 "huggingface_hub",
-                "docker"]
+                "pyyaml",
+                "docker",
+                "mediapy>=1.2.4",
+                "imageio",
+                "imageio-ffmpeg"]
 
 [project.scripts]
 vla = "vla.cmd.vla_cli:main"

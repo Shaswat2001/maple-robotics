@@ -86,7 +86,7 @@ class PolicyBackend(ABC):
         
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
-        return base64.b64decode(buffer.getvalue()).decode("utf-8")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     @abstractmethod
     def info(self) -> dict:
