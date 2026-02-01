@@ -13,7 +13,7 @@ from rich import print
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
-from vla.state.store import load_state, save_state
+from vla.state import store
 from vla.adapters import get_adapter
 from vla.utils.paths import policy_dir
 from vla.utils.logging import get_logger
@@ -85,7 +85,8 @@ class VLADaemon:
         self.running = True
         self.port = port
         self.device = device 
-        self.state = load_state()
+        
+        store.clear_containers()
         
         # Track env backends and handles
         self._env_backends = {}  # name -> backend instance
@@ -104,18 +105,18 @@ class VLADaemon:
 
         @self.app.get("/status")
         def status():
-
-            status = self.state.copy()
-            for name, data in status.items():
-
-                if "backend" in data:
-                    del data["backend"]
-            
             return {
                 "running": True,
                 "port": self.port,
                 "device": self.device,
-                "state": status
+                "pulled": {
+                    "policies": store.list_policies(),
+                    "envs": store.list_envs(),
+                },
+                "serving": {
+                    "policies": list(self._policy_handles.keys()),
+                    "envs": list(self._env_handles.keys()),
+                },
             }
         
         @self.app.post("/run")
@@ -244,11 +245,11 @@ class VLADaemon:
 
         @self.app.get("/policy/list")
         def policies():
-            return {"policies": self.state["policies"]}
+            return {"policies": store.list_policies()}
 
         @self.app.get("/env/list")
         def envs():
-            return {"envs": self.state["envs"]}
+            return {"envs": store.list_envs()}
         
         @self.app.post("/policy/pull")
         def pull_policy(req: PullPolicyRequest):
@@ -265,16 +266,14 @@ class VLADaemon:
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
 
-            pulled = self.state.setdefault("policies", [])
-            policy_id = f"{name}:{version}"
-            if policy_id not in pulled:
-                pulled.append(policy_id)
+            store.add_policy(
+                name=name,
+                version=version,
+                path=str(dst),
+                repo=manifest.get("repo"),
+            )
 
-            # optional: store manifests
-            self.state.setdefault("policy_manifests", {})[policy_id] = manifest
-            save_state(self.state)
-
-            return {"pulled": policy_id, "manifest": manifest}
+            return {"pulled": f"{name}:{version}", "manifest": manifest}
 
         @self.app.post("/env/pull")
         def pull_env(name: str):
@@ -295,9 +294,8 @@ class VLADaemon:
                     detail=str(e)
                 )
 
-            if name not in self.state["envs"]:
-                self.state["envs"].append(name)
-                save_state(self.state)
+            store.add_env(name=name, image=meta.get("image", ""))
+
             return {"env": name, "meta": meta}
         
         @self.app.post("/policy/serve")
@@ -308,8 +306,8 @@ class VLADaemon:
             if name not in POLICY_BACKENDS:
                 raise HTTPException(status_code=400, detail=f"Unknown policy backend '{name}'")
 
-            if policy_id not in self.state.get("policies", []):
-                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled")
+            if not store.get_policy(name, version):
+                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled. Run 'vla pull policy {req.spec}' first.")
 
             backend = POLICY_BACKENDS[name]()
             self._policy_backends[name] = backend
@@ -329,8 +327,17 @@ class VLADaemon:
                 raise HTTPException(status_code=400, detail=f"Failed to load '{policy_id}': {e}")
 
             self._policy_handles[handle.policy_id] = (name, handle)
-            served = self.state.setdefault("served_policies", {})
-            served[handle.policy_id] = handle.to_dict()
+            
+            store.add_container(
+                container_id=handle.container_id,
+                type="policy",
+                name=handle.policy_id,
+                backend=name,
+                host=handle.host,
+                port=handle.port,
+                status="ready",
+                metadata=handle.metadata,
+            )
 
             return {
                 "served": policy_id,
@@ -394,13 +401,11 @@ class VLADaemon:
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=str(e))
             
-            del self._policy_handles[policy_id]
-            
             # Update state
-            if policy_id in self.state.get("served_policies", {}):
-                del self.state["served_policies"][policy_id]
-            
-            save_state(self.state)
+            if handle.container_id:
+                store.remove_container(handle.container_id)
+
+            del self._policy_handles[policy_id]
             
             return {"stopped": policy_id}
 
@@ -410,7 +415,7 @@ class VLADaemon:
             name = req.name
             num_envs = req.num_envs
             
-            if name not in self.state["envs"]:
+            if not store.get_env(name):
                 raise HTTPException(
                     status_code=400, 
                     detail=f"Env '{name}' not pulled. Run 'vla pull env {name}' first."
@@ -433,19 +438,26 @@ class VLADaemon:
                     detail=f"Failed to serve env '{name}': {e}"
                 )
             
-            # Track handles
-            served_envs = self.state.setdefault("served_envs", {})
-            if name not in served_envs:
-                served_envs[name] = {"handles": []}
-            
             for handle in handles:
                 self._env_handles[handle.env_id] = (name, handle)
-                served_envs[name]["handles"].append(handle.to_dict())
+                
+                # Store in SQLite
+                store.add_container(
+                    container_id=handle.container_id,
+                    type="env",
+                    name=handle.env_id,
+                    backend=name,
+                    host=handle.host,
+                    port=handle.port,
+                    status="ready",
+                    metadata=handle.metadata,
+                )
             
             return {
                 "served": name,
                 "num_envs": len(handles),
                 "env_ids": [h.env_id for h in handles],
+                "ports": [h.port for h in handles],
             }
         
         @self.app.post("/env/setup")
@@ -552,16 +564,12 @@ class VLADaemon:
                     backend.stop([handle])
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=str(e))
+                        
+            # Update state
+            if handle.container_id:
+                store.remove_container(handle.container_id)
             
             del self._env_handles[env_id]
-            
-            # Update state
-            if backend_name in self.state.get("served_envs", {}):
-                handles = self.state["served_envs"][backend_name].get("handles", [])
-                self.state["served_envs"][backend_name]["handles"] = [
-                    h for h in handles if h.get("env_id") != env_id
-                ]
-                save_state(self.state)
             
             return {"stopped": env_id}
         
@@ -579,15 +587,10 @@ class VLADaemon:
                     except Exception as e:
                         raise HTTPException(status_code=500, detail=str(e))
                 
-                del self._env_handles[env_id]
+                if handle.container_id:
+                    store.remove_container(handle.container_id)
             
-                # Update state
-                if backend_name in self.state.get("served_envs", {}):
-                    handles = self.state["served_envs"][backend_name].get("handles", [])
-                    self.state["served_envs"][backend_name]["handles"] = [
-                        h for h in handles if h.get("env_id") != env_id
-                    ]
-                    save_state(self.state)
+                del self._env_handles[env_id]
             
             return {"stopped": True}
         
