@@ -145,6 +145,7 @@ class PolicyBackend(ABC):
 
         config = self._get_container_config(device, attn_implementation)
 
+        container = None
         try:
             container = self.client.containers.run(
                 self.IMAGE,
@@ -312,7 +313,6 @@ class PolicyBackend(ABC):
         snapshot_download(
             repo_id=repo,
             local_dir=dst,
-            local_dir_use_symlinks=False,
         )
 
         log.info(f"Download complete: {repo}")

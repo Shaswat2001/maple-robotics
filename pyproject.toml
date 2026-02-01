@@ -16,4 +16,4 @@ dependencies = ["typer",
                 "imageio-ffmpeg"]
 
 [project.scripts]
-maple = "vlmaplea.cmd.maple_cli:main"
+maple = "maple.cmd.maple_cli:main"
