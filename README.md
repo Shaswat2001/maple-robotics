@@ -1,1 +1,1 @@
-# vla
+# MAPLE - Model And Policy Learning Evaluation

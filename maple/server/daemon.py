@@ -18,9 +18,12 @@ from maple.adapters import get_adapter
 from maple.utils.paths import policy_dir
 from maple.utils.logging import get_logger
 from maple.utils.spec import parse_versioned
+from maple.utils.health import HealthMonitor, HealthStatus
 from maple.utils.lock import DaemonLock, is_daemon_running
 from maple.utils.cleanup import CleanupManager, register_cleanup_handler
 from maple.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
+from maple.backend.policy.base import PolicyHandle
+from maple.backend.envs.base import EnvHandle
 
 log = get_logger("daemon")
 
@@ -81,11 +84,12 @@ class EnvInfoRequest(BaseModel):
 
 class VLADaemon:
 
-    def __init__(self, port: int, device: str):
+    def __init__(self, port: int, device: str, health_check_interval: float = 30.0):
         self.running = True
         self.port = port
         self.device = device 
-        
+        health_interval = health_check_interval
+
         store.clear_containers()
         
         # Track env backends and handles
@@ -96,6 +100,11 @@ class VLADaemon:
         self._policy_handles = {}   # policy_id -> (backend_name, PolicyHandle)
 
         self.shutdown_event = threading.Event()
+
+        self._health_monitor = HealthMonitor(
+            check_interval=health_interval,
+            on_unhealthy=self._on_container_unhealthy,
+        )
 
         register_cleanup_handler("daemon", self._cleanup_all_containers)
         
@@ -116,6 +125,10 @@ class VLADaemon:
                 "serving": {
                     "policies": list(self._policy_handles.keys()),
                     "envs": list(self._env_handles.keys()),
+                },
+                "health_monitor": {
+                    "running": self._health_monitor.is_running,
+                    "containers": self._health_monitor.get_all_status(),
                 },
             }
         
@@ -216,7 +229,7 @@ class VLADaemon:
                         video_saved_path = str(output_path)
 
                     except Exception as video_err:
-                        print(f"Warning: Failed to save video: {video_err}")
+                        log.warning(f"Failed to save video: {video_err}")
                 
                 return {
                     "run_id": run_id,
@@ -339,6 +352,14 @@ class VLADaemon:
                 metadata=handle.metadata,
             )
 
+            self._health_monitor.register(
+                container_id=handle.container_id,
+                name=handle.policy_id,
+                check_fn=lambda h=handle, b=backend: self._check_policy_health(h, b),
+                restart_fn=None,  # Could add auto-restart later
+                auto_restart=False,
+            )
+
             return {
                 "served": policy_id,
                 "policy_id": handle.policy_id,
@@ -403,6 +424,7 @@ class VLADaemon:
             
             # Update state
             if handle.container_id:
+                self._health_monitor.unregister(handle.container_id)
                 store.remove_container(handle.container_id)
 
             del self._policy_handles[policy_id]
@@ -451,6 +473,13 @@ class VLADaemon:
                     port=handle.port,
                     status="ready",
                     metadata=handle.metadata,
+                )
+
+                self._health_monitor.register(
+                    container_id=handle.container_id,
+                    name=handle.env_id,
+                    check_fn=lambda h=handle, b=backend: self._check_env_health(h, b),
+                    auto_restart=False,
                 )
             
             return {
@@ -567,6 +596,7 @@ class VLADaemon:
                         
             # Update state
             if handle.container_id:
+                self._health_monitor.unregister(handle.container_id)
                 store.remove_container(handle.container_id)
             
             del self._env_handles[env_id]
@@ -588,6 +618,7 @@ class VLADaemon:
                         raise HTTPException(status_code=500, detail=str(e))
                 
                 if handle.container_id:
+                    self._health_monitor.unregister(handle.container_id)
                     store.remove_container(handle.container_id)
             
                 del self._env_handles[env_id]
@@ -617,6 +648,8 @@ class VLADaemon:
 
         signal.signal(signal.SIGINT, self._signal_shutdown)
         signal.signal(signal.SIGTERM, self._signal_shutdown)
+        
+        self._health_monitor.start()
 
         thread = threading.Thread(target=self._run_api, daemon=True)
         thread.start()
@@ -650,10 +683,33 @@ class VLADaemon:
     def _signal_shutdown(self, *_):
         self.shutdown_event.set()
 
+    def _check_policy_health(self, handle: PolicyHandle, backend) -> bool:
+        """Health check function for policies."""
+        try:
+            result = backend.health(handle)
+            return result.get("status") != "error"
+        except Exception:
+            return False
+    
+    def _check_env_health(self, handle: EnvHandle, backend) -> bool:
+        """Health check function for envs."""
+        try:
+            result = backend.health(handle)
+            return result.get("status") != "error"
+        except Exception:
+            return False
+    
+    def _on_container_unhealthy(self, container):
+        """Called when a container becomes unhealthy."""
+        log.warning(f"Container unhealthy: {container.name}")
+        store.update_container_status(container.container_id, "unhealthy")
+
     def _cleanup_all_containers(self):
         """Cleanup all containers (called by CleanupManager)."""
         log.info("Cleaning up all containers...")
         
+        self._health_monitor.stop()
+
         # Stop all policy containers
         for policy_id, (backend_name, handle) in list(self._policy_handles.items()):
             backend = self._policy_backends.get(backend_name)
@@ -664,6 +720,10 @@ class VLADaemon:
                 except Exception as e:
                     log.warning(f"Failed to stop policy {policy_id}: {e}")
 
+            if handle.container_id:
+                self._health_monitor.unregister(handle.container_id)
+                store.remove_container(handle.container_id)
+
         # Stop all env containers
         for env_id, (backend_name, handle) in list(self._env_handles.items()):
             backend = self._env_backends.get(backend_name)
@@ -673,13 +733,16 @@ class VLADaemon:
                     log.info(f"Stopped env: {env_id}")
                 except Exception as e:
                     log.warning(f"Failed to stop env {env_id}: {e}")
-        
+
+            if handle.container_id:
+                self._health_monitor.unregister(handle.container_id)
+                store.remove_container(handle.container_id)
+
         self._policy_handles.clear()
         self._env_handles.clear()
 
     def _cleanup_and_exit(self):
         log.info("Shutting down MAPLE daemon")
-        print("\n[yellow]Shutting down MAPLE daemon[/yellow]")
 
         self._cleanup_all_containers()
 
