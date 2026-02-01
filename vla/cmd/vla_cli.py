@@ -1,11 +1,25 @@
 import typer 
 import requests
 from rich import print
+from pathlib import Path
 from typing import Optional
-from vla.cmd.cli.misc import daemon_url, parse_policy_env
+
+from vla.cmd.cli.misc import daemon_url
 from vla.cmd.cli import pull_app, serve_app, list_app, env_app
+from vla.utils.logging import setup_logging, get_logger
+
+log = get_logger("cli")
 
 app = typer.Typer(no_args_is_help= True)
+
+@app.callback()
+def main_callback(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
+    log_file: Optional[Path] = typer.Option(None, "--log-file", help="Write logs to file"),
+):
+    """VLA CLI - Vision-Language-Action model evaluation tool."""
+    level = "DEBUG" if verbose else "INFO"
+    setup_logging(level=level, log_file=log_file, verbose=verbose)
 
 app.add_typer(pull_app, name="pull")
 app.add_typer(serve_app, name="serve")

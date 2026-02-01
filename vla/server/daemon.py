@@ -2,7 +2,6 @@ import os
 import sys
 import uuid
 import time
-import base64
 import numpy as np
 import mediapy
 import signal
@@ -18,8 +17,12 @@ from vla.state.store import load_state, save_state
 from vla.adapters import get_adapter
 from vla.scheduler import Scheduler
 from vla.utils.paths import policy_dir
+from vla.utils.logging import get_logger
 from vla.utils.spec import parse_versioned
+from vla.utils.cleanup import CleanupManager, register_cleanup_handler
 from vla.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
+
+log = get_logger("daemon")
 
 PID_FILE = Path.home() / ".vla" / "daemon.pid"
 
@@ -96,6 +99,10 @@ class VLADaemon:
         self._policy_handles = {}   # policy_id -> (backend_name, PolicyHandle)
 
         self.shutdown_event = threading.Event()
+
+        register_cleanup_handler("daemon", self._cleanup_all_containers)
+        
+        log.info(f"VLA Daemon initializing on port {port}")
 
         self.app = FastAPI(title= "VLA Daemon")
 
@@ -642,17 +649,19 @@ class VLADaemon:
     def _signal_shutdown(self, *_):
         self.shutdown_event.set()
 
-    def _cleanup_and_exit(self):
-        print("\n[yellow]Shutting down VLA daemon[/yellow]")
+    def _cleanup_all_containers(self):
+        """Cleanup all containers (called by CleanupManager)."""
+        log.info("Cleaning up all containers...")
         
+        # Stop all policy containers
         for policy_id, (backend_name, handle) in list(self._policy_handles.items()):
             backend = self._policy_backends.get(backend_name)
             if backend:
                 try:
                     backend.stop(handle)
-                    print(f"[yellow]Stopped policy: {policy_id}[/yellow]")
+                    log.info(f"Stopped policy: {policy_id}")
                 except Exception as e:
-                    print(f"[red]Failed to stop {policy_id}: {e}[/red]")
+                    log.warning(f"Failed to stop policy {policy_id}: {e}")
 
         # Stop all env containers
         for env_id, (backend_name, handle) in list(self._env_handles.items()):
@@ -660,9 +669,18 @@ class VLADaemon:
             if backend:
                 try:
                     backend.stop([handle])
-                    print(f"[yellow]Stopped env: {env_id}[/yellow]")
+                    log.info(f"Stopped env: {env_id}")
                 except Exception as e:
-                    print(f"[red]Failed to stop {env_id}: {e}[/red]")
+                    log.warning(f"Failed to stop env {env_id}: {e}")
+        
+        self._policy_handles.clear()
+        self._env_handles.clear()
+
+    def _cleanup_and_exit(self):
+        log.info("Shutting down VLA daemon")
+        print("\n[yellow]Shutting down VLA daemon[/yellow]")
+
+        self._cleanup_all_containers()
 
         if PID_FILE.exists():
             PID_FILE.unlink()
