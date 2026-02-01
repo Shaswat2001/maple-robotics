@@ -15,7 +15,6 @@ from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from vla.state.store import load_state, save_state
 from vla.adapters import get_adapter
-from vla.scheduler import Scheduler
 from vla.utils.paths import policy_dir
 from vla.utils.logging import get_logger
 from vla.utils.spec import parse_versioned
@@ -87,8 +86,6 @@ class VLADaemon:
         self.port = port
         self.device = device 
         self.state = load_state()
-
-        self.scheduler = Scheduler()
         
         # Track env backends and handles
         self._env_backends = {}  # name -> backend instance
