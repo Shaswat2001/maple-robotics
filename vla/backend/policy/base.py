@@ -379,3 +379,26 @@ class PolicyBackend(ABC):
             log.error(f"Policy container error: {detail}")
             raise RuntimeError(f"Policy container error ({resp.status_code}): {detail}")
         return resp.json()
+    
+    def _wait_for_ready(self, handle: PolicyHandle) -> bool:
+        """Wait for container to be ready to accept requests."""
+        base_url = self._get_base_url(handle)
+        deadline = time.time() + self.STARTUP_TIMEOUT
+        
+        log.debug(f"Waiting for container {handle.policy_id} to be ready...")
+        
+        while time.time() < deadline:
+            try:
+                resp = requests.get(f"{base_url}/health", timeout=10)
+                if resp.status_code == 200:
+                    log.debug(f"Container {handle.policy_id} is ready")
+                    return True
+            except requests.exceptions.ConnectionError:
+                pass
+            except requests.exceptions.Timeout:
+                pass
+            
+            time.sleep(self.HEALTH_CHECK_INTERVAL)
+        
+        log.error(f"Container {handle.policy_id} failed to become ready within {self.STARTUP_TIMEOUT}s")
+        return False

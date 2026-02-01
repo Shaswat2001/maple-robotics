@@ -1,5 +1,5 @@
 import requests
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Any
 from vla.backend.policy.base import PolicyBackend, PolicyHandle
 
 class OpenVLAPolicy(PolicyBackend):

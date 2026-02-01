@@ -19,12 +19,11 @@ from vla.scheduler import Scheduler
 from vla.utils.paths import policy_dir
 from vla.utils.logging import get_logger
 from vla.utils.spec import parse_versioned
+from vla.utils.lock import DaemonLock, is_daemon_running
 from vla.utils.cleanup import CleanupManager, register_cleanup_handler
 from vla.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
 
 log = get_logger("daemon")
-
-PID_FILE = Path.home() / ".vla" / "daemon.pid"
 
 class RunRequest(BaseModel):
     policy_id: str
@@ -602,12 +601,14 @@ class VLADaemon:
     
     def start(self):
         
-        if PID_FILE.exists():
+        if is_daemon_running():
             print("[red]Deamon already running[/red]")
             sys.exit(1)
 
-        PID_FILE.parent.mkdir(parents=True, exist_ok=True)
-        PID_FILE.write_text(str(os.getpid()))
+        self._lock = DaemonLock()
+        if not self._lock.acquire():
+            print("[red]Could not acquire daemon lock[/red]")
+            sys.exit(1)
 
         print(
         f"[bold cyan]VLA daemon started[/bold cyan] "
@@ -682,7 +683,8 @@ class VLADaemon:
 
         self._cleanup_all_containers()
 
-        if PID_FILE.exists():
-            PID_FILE.unlink()
+        # Release daemon lock
+        if hasattr(self, '_lock'):
+            self._lock.release()
         
         sys.exit(0)
