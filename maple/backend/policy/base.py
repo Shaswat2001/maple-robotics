@@ -13,9 +13,9 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from huggingface_hub import snapshot_download
 
-from vla.utils.retry import retry
-from vla.utils.logging import get_logger
-from vla.utils.cleanup import register_container, unregister_container
+from maple.utils.retry import retry
+from maple.utils.logging import get_logger
+from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("policy.base")
 

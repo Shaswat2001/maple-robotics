@@ -1,7 +1,7 @@
 import requests
 from typing import Optional
-from vla.backend.envs.base import EnvBackend
-from vla.utils.logging import get_logger
+from maple.backend.envs.base import EnvBackend
+from maple.utils.logging import get_logger
 
 log = get_logger("env.libero")
 

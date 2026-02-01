@@ -1,7 +1,7 @@
 import typer 
 import requests
 from rich import print
-from vla.cmd.cli.misc import daemon_url
+from maple.cmd.cli.misc import daemon_url
 
 pull_app = typer.Typer(no_args_is_help=True)
 

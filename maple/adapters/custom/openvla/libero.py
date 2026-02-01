@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Dict, Any
-from vla.adapters.base import Adapter
+from maple.adapters.base import Adapter
 
 class OpenVLALiberoAdapter(Adapter):    
 

@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import List, Optional
 from contextlib import contextmanager
 
-from vla.utils.logging import get_logger
+from maple.utils.logging import get_logger
 
 log = get_logger("state")
 
-STATE_DIR = Path.home() / ".vla"
+STATE_DIR = Path.home() / ".maple"
 DB_FILE = STATE_DIR / "state.db"
 
 

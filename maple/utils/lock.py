@@ -3,7 +3,7 @@ import socket
 from pathlib import Path
 from typing import Optional
 
-from vla.utils.logging import get_logger
+from maple.utils.logging import get_logger
 
 log = get_logger("lock")
 

@@ -4,8 +4,8 @@ import requests
 import subprocess
 from typing import Optional
 from rich import print
-from vla.server.daemon import VLADaemon
-from vla.cmd.cli.misc import daemon_url
+from maple.server.daemon import VLADaemon
+from maple.cmd.cli.misc import daemon_url
 
 serve_app = typer.Typer(no_args_is_help=False, invoke_without_command=True)
 
@@ -38,7 +38,7 @@ def serve_root(ctx: typer.Context,
             start_new_session=True,  # important
         )
 
-        print("[green]VLA daemon started in background[/green]")
+        print("[green]MAPLE daemon started in background[/green]")
         return
 
     

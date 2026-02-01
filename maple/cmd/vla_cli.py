@@ -4,9 +4,9 @@ from rich import print
 from pathlib import Path
 from typing import Optional
 
-from vla.cmd.cli.misc import daemon_url
-from vla.cmd.cli import pull_app, serve_app, list_app, env_app
-from vla.utils.logging import setup_logging, get_logger
+from maple.cmd.cli.misc import daemon_url
+from maple.cmd.cli import pull_app, serve_app, list_app, env_app
+from maple.utils.logging import setup_logging, get_logger
 
 log = get_logger("cli")
 
@@ -17,7 +17,6 @@ def main_callback(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
     log_file: Optional[Path] = typer.Option(None, "--log-file", help="Write logs to file"),
 ):
-    """VLA CLI - Vision-Language-Action model evaluation tool."""
     level = "DEBUG" if verbose else "INFO"
     setup_logging(level=level, log_file=log_file, verbose=verbose)
 
@@ -41,9 +40,6 @@ def run(
 ):
     """
     Run a policy on an environment task.
-    
-    Example:
-        vla run openvla-7b-abc123 libero-xyz789 --task libero_10/0
     """
     payload = {
         "policy_id": policy_id,
@@ -106,10 +102,10 @@ def status(port: int = typer.Option(8080, "--port")):
     try:
         r = requests.get(f"http://0.0.0.0:{port}/status", timeout=1)
         data = r.json()
-        print("[bold green]VLA daemon running[/bold green]")
+        print("[bold green]MAPLE daemon running[/bold green]")
         print(data)
     except requests.exceptions.ConnectionError:
-        print("[red]VLA daemon not running[/red]")
+        print("[red]MAPLE daemon not running[/red]")
 
 @app.command("stop")
 def stop(
@@ -117,7 +113,7 @@ def stop(
 ):
     try:
         requests.post(f"{daemon_url(port)}/stop")
-        print("[green]VLA daemon stopped[/green]")
+        print("[green]MAPLE daemon stopped[/green]")
     except requests.exceptions.ConnectionError:
         print("[red]Daemon not running[/red]")
 

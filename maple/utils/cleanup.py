@@ -4,7 +4,7 @@ import sys
 import threading
 from typing import Callable, Dict, Optional, Set
 
-from vla.utils.logging import get_logger
+from maple.utils.logging import get_logger
 
 log = get_logger("cleanup")
 

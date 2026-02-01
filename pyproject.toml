@@ -1,5 +1,5 @@
 [project]
-name = "vla"
+name = "maple-robotics"
 version = "0.0.1"
 dependencies = ["typer", 
                 "rich",
@@ -16,4 +16,4 @@ dependencies = ["typer",
                 "imageio-ffmpeg"]
 
 [project.scripts]
-vla = "vla.cmd.vla_cli:main"
+maple = "vlmaplea.cmd.maple_cli:main"

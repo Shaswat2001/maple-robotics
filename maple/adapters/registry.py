@@ -1,6 +1,6 @@
 from typing import Dict, Type
-from vla.adapters.custom import OpenVLALiberoAdapter
-from vla.adapters.base import Adapter
+from maple.adapters.custom import OpenVLALiberoAdapter
+from maple.adapters.base import Adapter
 
 # Global registry
 ADAPTERS: Dict[str, Adapter] = {

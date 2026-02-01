@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import wraps 
 from typing import Callable, Optional, Tuple, Type, TypeVar
 
-from vla.utils.logging import get_logger
+from maple.utils.logging import get_logger
 
 log = get_logger("retry")
 T = TypeVar("T")

@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 import docker
 from docker.errors import NotFound, APIError
 
-from vla.utils.logging import get_logger
-from vla.utils.retry import retry
-from vla.utils.cleanup import register_container, unregister_container
+from maple.utils.logging import get_logger
+from maple.utils.retry import retry
+from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("env.base")
 

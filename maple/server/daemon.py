@@ -13,14 +13,14 @@ from rich import print
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
-from vla.state import store
-from vla.adapters import get_adapter
-from vla.utils.paths import policy_dir
-from vla.utils.logging import get_logger
-from vla.utils.spec import parse_versioned
-from vla.utils.lock import DaemonLock, is_daemon_running
-from vla.utils.cleanup import CleanupManager, register_cleanup_handler
-from vla.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
+from maple.state import store
+from maple.adapters import get_adapter
+from maple.utils.paths import policy_dir
+from maple.utils.logging import get_logger
+from maple.utils.spec import parse_versioned
+from maple.utils.lock import DaemonLock, is_daemon_running
+from maple.utils.cleanup import CleanupManager, register_cleanup_handler
+from maple.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
 
 log = get_logger("daemon")
 
@@ -99,9 +99,9 @@ class VLADaemon:
 
         register_cleanup_handler("daemon", self._cleanup_all_containers)
         
-        log.info(f"VLA Daemon initializing on port {port}")
+        log.info(f"MAPLE Daemon initializing on port {port}")
 
-        self.app = FastAPI(title= "VLA Daemon")
+        self.app = FastAPI(title= "MAPLE Daemon")
 
         @self.app.get("/status")
         def status():
@@ -208,7 +208,7 @@ class VLADaemon:
                         if req.video_path:
                             output_path = Path(req.video_path)
                         else:
-                            output_path = Path.home() / ".vla" / "videos" / f"{run_id}.mp4"
+                            output_path = Path.home() / ".maple" / "videos" / f"{run_id}.mp4"
                         
                         output_path.parent.mkdir(parents=True, exist_ok=True)
                         
@@ -307,7 +307,7 @@ class VLADaemon:
                 raise HTTPException(status_code=400, detail=f"Unknown policy backend '{name}'")
 
             if not store.get_policy(name, version):
-                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled. Run 'vla pull policy {req.spec}' first.")
+                raise HTTPException(status_code=400, detail=f"Policy '{policy_id}' not pulled. Run 'maple pull policy {req.spec}' first.")
 
             backend = POLICY_BACKENDS[name]()
             self._policy_backends[name] = backend
@@ -418,7 +418,7 @@ class VLADaemon:
             if not store.get_env(name):
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"Env '{name}' not pulled. Run 'vla pull env {name}' first."
+                    detail=f"Env '{name}' not pulled. Run 'maple pull env {name}' first."
                 )
             
             if name not in ENV_BACKENDS:
@@ -611,7 +611,7 @@ class VLADaemon:
             sys.exit(1)
 
         print(
-        f"[bold cyan]VLA daemon started[/bold cyan] "
+        f"[bold cyan]MAPLE daemon started[/bold cyan] "
         f"(port={self.port}, device={self.device})"
         )
 
@@ -678,8 +678,8 @@ class VLADaemon:
         self._env_handles.clear()
 
     def _cleanup_and_exit(self):
-        log.info("Shutting down VLA daemon")
-        print("\n[yellow]Shutting down VLA daemon[/yellow]")
+        log.info("Shutting down MAPLE daemon")
+        print("\n[yellow]Shutting down MAPLE daemon[/yellow]")
 
         self._cleanup_all_containers()
 
