@@ -218,6 +218,7 @@ class BatchEvaluator:
         instruction: Optional[str] = None,
         seed: int = 0,
         max_steps: int = 300,
+        timeout: int = 200,
         unnorm_key: Optional[str] = None,
         save_video: bool = False,
         video_path: Optional[str] = None,
@@ -226,7 +227,6 @@ class BatchEvaluator:
         
         run_id = f"eval-{uuid.uuid4().hex[:8]}"
         started_at = time.time()
-        
         result = EvalResult(
             run_id=run_id,
             policy_id=policy_id,
@@ -253,7 +253,7 @@ class BatchEvaluator:
                     "save_video": save_video,
                     "video_path": video_path,
                 },
-                timeout=max_steps * 2,  # Generous timeout
+                timeout=max_steps * timeout,  # Generous timeout
             )
             
             result.steps = response.get("steps", 0)
@@ -301,6 +301,7 @@ class BatchEvaluator:
         tasks: List[str],
         seeds: List[int] = None,
         max_steps: int = 300,
+        timeout: int = 200,
         unnorm_key: Optional[str] = None,
         save_video: bool = False,
         video_dir: Optional[str] = None,
@@ -367,7 +368,7 @@ class BatchEvaluator:
         if parallel <= 1:
             # Sequential execution
             for ep in episodes:
-                result = self.run_single(**ep)
+                result = self.run_single(**ep, timeout= timeout)
                 batch.results.append(result)
                 completed += 1
                 

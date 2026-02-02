@@ -28,7 +28,7 @@ class ContainerConfig:
 
 @dataclass
 class PolicyConfig:
-    default_device: str = "cuda:0"
+    default_device: str = "cpu"
     attn_implementation: str = "sdpa"  # sdpa, flash_attention_2, eager
     
 
@@ -42,10 +42,17 @@ class DaemonConfig:
     host: str = "0.0.0.0"
     port: int = 8000
 
+@dataclass  
+class RunConfig:
+    max_steps: int = 300
+    timeout: int = 200
+    save_video: bool = False
+    video_dir: str = "~/.maple/videos"
 
 @dataclass  
 class EvalConfig:
     max_steps: int = 300
+    timeout: int = 200
     save_video: bool = False
     video_dir: str = "~/.maple/videos"
     results_dir: str = "~/.maple/results"
@@ -59,6 +66,7 @@ class Config:
     env: EnvConfig = field(default_factory=EnvConfig)
     daemon: DaemonConfig = field(default_factory=DaemonConfig)
     eval: EvalConfig = field(default_factory=EvalConfig)
+    run: RunConfig = field(default_factory=RunConfig)
     
     # Convenience aliases
     @property
@@ -153,6 +161,11 @@ def _load_from_dict(cfg: Config, data: dict):
         for k, v in data["eval"].items():
             if hasattr(cfg.eval, k):
                 setattr(cfg.eval, k, v)
+
+    if "run" in data:
+        for k, v in data["run"].items():
+            if hasattr(cfg.run, k):
+                setattr(cfg.run, k, v)
 
 def load_config(config_path: Path = None) -> Config:
 

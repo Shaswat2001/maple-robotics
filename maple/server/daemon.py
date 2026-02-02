@@ -43,7 +43,7 @@ class PullPolicyRequest(BaseModel):
 
 class ServePolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
-    device: str = "cuda:0"
+    device: str = "cpu"
     host_port: Optional[int] = None
     attn_implementation: str = "sdpa"
 

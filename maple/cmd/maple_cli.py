@@ -40,12 +40,12 @@ def run(
     env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     task: str = typer.Option(..., "--task", "-t", help="Task spec (e.g., libero_10/0)"),
     instruction: Optional[str] = typer.Option(None, "--instruction", "-i", help="Override task instruction"),
-    max_steps: int = typer.Option(300, "--max-steps", "-m", help="Maximum steps per episode"),
+    max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
     seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed"),
     unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
     save_video: bool = typer.Option(False, "--save-video", "-v", help="Save rollout video"),
     video_path: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
-    timeout: Optional[str] = typer.Option(200, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
     port: int = typer.Option(None, "--port"),
 ):
     """
@@ -53,6 +53,10 @@ def run(
     """
 
     port = port or config.daemon.port
+    max_steps = max_steps if max_steps is not None else config.run.max_steps
+    timeout = timeout if timeout is not None else config.run.timeout
+    save_video = save_video if save_video is not None else config.run.save_video
+    video_dir = video_dir or config.run.video_dir
     
     payload = {
         "policy_id": policy_id,
@@ -81,7 +85,7 @@ def run(
         r = requests.post(
             f"{daemon_url(port)}/run",
             json=payload,
-            timeout=max_steps * timeout,  # Generous timeout
+            timeout=int(max_steps * timeout),  # Generous timeout
         )
     except requests.exceptions.Timeout:
         print(f"[red]Error:[/red] Request timed out after {max_steps * timeout}s")
@@ -140,6 +144,7 @@ def eval_cmd(
     tasks: str = typer.Option(..., "--tasks", "-t", help="Tasks (comma-separated or suite name like libero_10)"),
     seeds: str = typer.Option("0", "--seeds", "-s", help="Seeds (comma-separated, e.g., 0,1,2)"),
     max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
     unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
     save_video: bool = typer.Option(None, "--save-video", "-v", help="Save rollout videos"),
     video_dir: Optional[str] = typer.Option(None, "--video-dir", help="Directory for videos"),
@@ -165,6 +170,7 @@ def eval_cmd(
     # Use config defaults
     port = port or config.daemon.port
     max_steps = max_steps if max_steps is not None else config.eval.max_steps
+    timeout = timeout if timeout is not None else config.eval.timeout
     save_video = save_video if save_video is not None else config.eval.save_video
     video_dir = video_dir or config.eval.video_dir
     output_dir = Path(output).expanduser() if output else Path(config.eval.results_dir).expanduser()
@@ -182,8 +188,10 @@ def eval_cmd(
         print(f"[cyan]Fetching tasks for suite '{tasks}'...[/cyan]")
         try:
             r = requests.get(f"{daemon_url(port)}/env/tasks/{backend}", params={"suite": tasks})
+
             if r.status_code == 200:
-                suite_tasks = r.json().get("tasks", [])
+                suite_tasks = r.json().get(tasks, [])
+                suite_tasks = [f'{tasks}/{s["index"]}' for s in suite_tasks]
                 task_list = suite_tasks
                 print(f"  Found {len(task_list)} tasks")
             else:
@@ -211,16 +219,6 @@ def eval_cmd(
     
     evaluator = BatchEvaluator(daemon_url=daemon_url(port))
     
-    # Progress tracking
-    completed = 0
-    successful = 0
-    
-    def on_progress(done, total, result):
-        nonlocal completed, successful
-        completed = done
-        if result.success:
-            successful += 1
-    
     try:
         with Progress(
             SpinnerColumn(),
@@ -234,6 +232,7 @@ def eval_cmd(
                 tasks=task_list,
                 seeds=seed_list,
                 max_steps=max_steps,
+                timeout=timeout,
                 unnorm_key=unnorm_key,
                 save_video=save_video,
                 video_dir=video_dir,
