@@ -8,11 +8,27 @@ from dataclasses import dataclass, field
 import docker
 from docker.errors import NotFound, APIError
 
-from maple.utils.logging import get_logger
 from maple.utils.retry import retry
+from maple.utils.logging import get_logger
+from maple.config import config as maple_config
 from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("env.base")
+
+def _get_config_value(attr: str, default: Any) -> Any:
+    """Get config value, falling back to default if config not loaded."""
+    try:
+        if attr == "memory_limit":
+            # Env uses less memory than policy by default
+            return maple_config.containers.memory_limit
+        elif attr == "startup_timeout":
+            return maple_config.containers.startup_timeout
+        elif attr == "health_check_interval":
+            return maple_config.containers.health_check_interval
+    except Exception:
+        pass
+    return default
+
 
 @dataclass
 class EnvHandle:
@@ -39,15 +55,18 @@ class EnvHandle:
 
 class EnvBackend(ABC):
     name: str
-    IMAGE: str
-    CONTAINER_PORT: int = 8000
-    STARTUP_TIMEOUT: int = 120
-    HEALTH_CHECK_INTERVAL: int = 2
-    MEMORY_LIMIT: str = "4g"
+    _image: str
+    _container_port: int = 8000
+    _startup_timeout: int = 120
+    _health_check_interval: int = 2
+    _memory_limit: str = "4g"
 
     def __init__(self):
         self.client = docker.from_env()
         self._active_handles: Dict[str, EnvHandle] = {}
+
+        self._startup_timeout = _get_config_value("startup_timeout", self._startup_timeout)
+        self._health_check_interval = _get_config_value("health_check_interval", self._health_check_interval)
 
     def _get_base_url(self, handle: EnvHandle) -> str:
         """Get base URL for RPC calls."""
@@ -56,7 +75,7 @@ class EnvBackend(ABC):
     def _wait_for_ready(self, handle: EnvHandle) -> bool:
         """Wait for container to be ready to accept requests."""
         base_url = self._get_base_url(handle)
-        deadline = time.time() + self.STARTUP_TIMEOUT
+        deadline = time.time() + self._startup_timeout
 
         log.debug(f"Waiting for container {handle.env_id} to be ready....")
         
@@ -71,9 +90,9 @@ class EnvBackend(ABC):
             except requests.exceptions.Timeout:
                 pass
             
-            time.sleep(self.HEALTH_CHECK_INTERVAL)
+            time.sleep(self._health_check_interval)
         
-        log.error(f"Container {handle.env_id} failed to become ready within {self.STARTUP_TIMEOUT}s")
+        log.error(f"Container {handle.env_id} failed to become ready within {self._startup_timeout}s")
         return False
     
     def health(self, handle: EnvHandle) -> dict:
@@ -91,12 +110,12 @@ class EnvBackend(ABC):
     def pull(self) -> dict:
         """Pull or build the LIBERO Docker image."""
         try:
-            log.info(f"Pulling Docker image {self.IMAGE}...")
-            image = self.client.images.pull(self.IMAGE)
-            log.info(f"Image pulled: {self.IMAGE}")
+            log.info(f"Pulling Docker image {self._image}...")
+            image = self.client.images.pull(self._image)
+            log.info(f"Image pulled: {self._image}")
             return {
                 "env": self.name,
-                "image": self.IMAGE,
+                "image": self._image,
                 "source": "pulled",
             }
         except APIError:
@@ -104,17 +123,17 @@ class EnvBackend(ABC):
         
         # Check if image exists locally
         try:
-            image = self.client.images.get(self.IMAGE)
-            log.debug(f"Image found locally: {self.IMAGE}")
+            image = self.client.images.get(self._image)
+            log.debug(f"Image found locally: {self._image}")
             return {
                 "env": self.name,
-                "image": self.IMAGE,
+                "image": self._image,
                 "source": "local",
             }
         except NotFound:
             raise RuntimeError(
-                f"Image {self.IMAGE} not found. "
-                f"Build it with: docker build -t {self.IMAGE} docker/libero/"
+                f"Image {self._image} not found. "
+                f"Build it with: docker build -t {self._image} docker/libero/"
             )
     
     def serve(self, num_envs: int = 1, host_port: Optional[int] = None) -> List[EnvHandle]:
@@ -130,9 +149,9 @@ class EnvBackend(ABC):
             env_id = f"{self.name}-{uuid.uuid4().hex[:8]}"
             
             if host_port is not None:
-                port_mapping = {f"{self.CONTAINER_PORT}/tcp": host_port}
+                port_mapping = {f"{self._container_port}/tcp": host_port}
             else:
-                port_mapping = {f"{self.CONTAINER_PORT}/tcp": None}
+                port_mapping = {f"{self._container_port}/tcp": None}
             
             container = None
             try:
@@ -140,7 +159,7 @@ class EnvBackend(ABC):
                 config = self._get_container_config()
                 
                 container = self.client.containers.run(
-                    self.IMAGE,
+                    self._image,
                     detach=True,
                     remove=True,
                     name=env_id,
@@ -149,7 +168,7 @@ class EnvBackend(ABC):
                         "vla.env": self.name,
                         "vla.env_id": env_id,
                     },
-                    mem_limit=self.MEMORY_LIMIT,
+                    mem_limit=self._memory_limit,
                     environment=config.get("environment", {}),
                     volumes=config.get("volumes", {}),
                     device_requests=config.get("device_requests", []),
@@ -177,7 +196,7 @@ class EnvBackend(ABC):
                 if self._wait_for_ready(handle):
                     handle.metadata["status"] = "ready"
                 else:
-                    raise RuntimeError(f"Container {env_id} failed to start within {self.STARTUP_TIMEOUT}s")
+                    raise RuntimeError(f"Container {env_id} failed to start within {self._startup_timeout}s")
                 
                 self._active_handles[env_id] = handle
                 handles.append(handle)
@@ -204,7 +223,7 @@ class EnvBackend(ABC):
         for _ in range(max_attempts):
             container.reload()
             port_info = container.attrs["NetworkSettings"]["Ports"]
-            port_key = f"{self.CONTAINER_PORT}/tcp"
+            port_key = f"{self._container_port}/tcp"
             
             if port_info and port_key in port_info and port_info[port_key]:
                 return int(port_info[port_key][0]["HostPort"])

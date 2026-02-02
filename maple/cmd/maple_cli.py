@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Optional
 
 from maple.cmd.cli.misc import daemon_url
-from maple.cmd.cli import pull_app, serve_app, list_app, env_app
+from maple.config import config, load_config
+from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app
 from maple.utils.logging import setup_logging, get_logger
 
 log = get_logger("cli")
@@ -16,14 +17,20 @@ app = typer.Typer(no_args_is_help= True)
 def main_callback(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
     log_file: Optional[Path] = typer.Option(None, "--log-file", help="Write logs to file"),
+    config_file: Optional[Path] = typer.Option(None, "--config", "-c", help="Config file path"),
 ):
-    level = "DEBUG" if verbose else "INFO"
-    setup_logging(level=level, log_file=log_file, verbose=verbose)
+    load_config(config_file)
+    
+    # Override with CLI args
+    level = "DEBUG" if verbose else config.logging.level
+    log_path = log_file or (Path(config.logging.file) if config.logging.file else None)
+    setup_logging(level=level, log_file=log_path, verbose=verbose)
 
-app.add_typer(pull_app, name="pull")
-app.add_typer(serve_app, name="serve")
+app.add_typer(pull_app, name="pull", help="Download management of envs and policies")
+app.add_typer(serve_app, name="serve", help="Spin docker containers")
 app.add_typer(list_app, name="list")
 app.add_typer(env_app, name="env")
+app.add_typer(config_app, name="config", help="Configuration management")
 
 @app.command("run")
 def run(
@@ -99,6 +106,8 @@ def run(
 
 @app.command("status")
 def status(port: int = typer.Option(8080, "--port")):
+
+    port = port or config.daemon.port
     try:
         r = requests.get(f"http://0.0.0.0:{port}/status", timeout=1)
         data = r.json()
@@ -108,9 +117,9 @@ def status(port: int = typer.Option(8080, "--port")):
         print("[red]MAPLE daemon not running[/red]")
 
 @app.command("stop")
-def stop(
-    port: int = typer.Option(8080, "--port"),
-):
+def stop(port: int = typer.Option(8080, "--port")):
+    
+    port = port or config.daemon.port
     try:
         requests.post(f"{daemon_url(port)}/stop")
         print("[green]MAPLE daemon stopped[/green]")

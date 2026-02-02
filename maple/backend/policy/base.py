@@ -15,9 +15,25 @@ from huggingface_hub import snapshot_download
 
 from maple.utils.retry import retry
 from maple.utils.logging import get_logger
+from maple.config import config as maple_config
 from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("policy.base")
+
+def _get_config_value(attr: str, default: Any) -> Any:
+    """Get config value, falling back to default if config not loaded."""
+    try:
+        if attr == "memory_limit":
+            return maple_config.containers.memory_limit
+        elif attr == "shm_size":
+            return maple_config.containers.shm_size
+        elif attr == "startup_timeout":
+            return maple_config.containers.startup_timeout
+        elif attr == "health_check_interval":
+            return maple_config.containers.health_check_interval
+    except Exception:
+        pass
+    return default
 
 @dataclass
 class PolicyHandle:
@@ -51,18 +67,23 @@ class PolicyHandle:
     
 class PolicyBackend(ABC):
     name: str
-    IMAGE: str
-    HF_REPOS: Dict[str, str]  # version -> HuggingFace repo ID
+    _image: str
+    _hf_repos: Dict[str, str]  # version -> HuggingFace repo ID
     
-    CONTAINER_PORT: int = 8000
-    STARTUP_TIMEOUT: int = 300
-    HEALTH_CHECK_INTERVAL: int = 5
-    MEMORY_LIMIT: str = "32g"
-    SHM_SIZE: str = "2g"
+    _container_port: int = 8000
+    _startup_timeout: int = 300
+    _health_check_interval: int = 5
+    _memory_limit: str = "32g"
+    _shm_size: str = "2g"
 
     def __init__(self):
         self.client = docker.from_env()
         self._active_handles: Dict[str, PolicyHandle] = {}
+
+        self._memory_limit = _get_config_value("memory_limit", self._memory_limit)
+        self._shm_size = _get_config_value("shm_size", self._shm_size)
+        self._startup_timeout = _get_config_value("startup_timeout", self._startup_timeout)
+        self._health_check_interval = _get_config_value("health_check_interval", self._health_check_interval)
 
     @abstractmethod
     def info(self) -> dict:
@@ -86,7 +107,7 @@ class PolicyBackend(ABC):
     
     def wait_for_ready(self, handle: PolicyHandle) -> bool:
         base_url = self._get_base_url(handle)
-        deadline = time.time() + self.STARTUP_TIMEOUT
+        deadline = time.time() + self._startup_timeout
 
         log.debug(f"Waiting for container {handle.policy_id} to be ready...")
 
@@ -101,9 +122,9 @@ class PolicyBackend(ABC):
             except requests.exceptions.Timeout:
                 pass
             
-            time.sleep(self.HEALTH_CHECK_INTERVAL)
+            time.sleep(self._health_check_interval)
         
-        log.error(f"Container {handle.policy_id} failed to become ready within {self.STARTUP_TIMEOUT}s")
+        log.error(f"Container {handle.policy_id} failed to become ready within {self._startup_timeout}s")
         return False
     
     def _encode_image(self, image: Any) -> str:
@@ -139,16 +160,16 @@ class PolicyBackend(ABC):
         log.debug(f"  Attention: {attn_implementation}")
 
         if host_port is not None:
-            port_mapping = {f"{self.CONTAINER_PORT}/tcp": host_port}
+            port_mapping = {f"{self._container_port}/tcp": host_port}
         else:
-            port_mapping = {f"{self.CONTAINER_PORT}/tcp": None}
+            port_mapping = {f"{self._container_port}/tcp": None}
 
         config = self._get_container_config(device, attn_implementation)
 
         container = None
         try:
             container = self.client.containers.run(
-                self.IMAGE,
+                self._image,
                 detach=True,
                 remove=True,
                 name=policy_id,
@@ -166,8 +187,8 @@ class PolicyBackend(ABC):
                     "vla.policy_id": policy_id,
                     "vla.version": version,
                 },
-                mem_limit=self.MEMORY_LIMIT,
-                shm_size=self.SHM_SIZE,
+                mem_limit=self._memory_limit,
+                shm_size=self._shm_size,
             )
 
             register_container(container.id, policy_id)
@@ -197,7 +218,7 @@ class PolicyBackend(ABC):
             
             # Wait for container to be ready
             if not self._wait_for_ready(handle):
-                raise RuntimeError(f"Container {policy_id} failed to start within {self.STARTUP_TIMEOUT}s")
+                raise RuntimeError(f"Container {policy_id} failed to start within {self._startup_timeout}s")
             
             # Load model
             self._load_model(handle, device, attn_implementation)
@@ -223,7 +244,7 @@ class PolicyBackend(ABC):
         for _ in range(max_attempts):
             container.reload()
             port_info = container.attrs["NetworkSettings"]["Ports"]
-            port_key = f"{self.CONTAINER_PORT}/tcp"
+            port_key = f"{self._container_port}/tcp"
             
             if port_info and port_key in port_info and port_info[port_key]:
                 return int(port_info[port_key][0]["HostPort"])
@@ -244,7 +265,7 @@ class PolicyBackend(ABC):
                 "device": device,
                 "attn_implementation": attn_implementation,
             },
-            timeout=self.STARTUP_TIMEOUT,
+            timeout=self._startup_timeout,
         )
         
         if resp.status_code != 200:
@@ -282,25 +303,25 @@ class PolicyBackend(ABC):
     def pull_image(self) -> dict:
         """Pull or check for the Docker image."""
         try:
-            log.info(f"Pulling Docker image {self.IMAGE}...")
-            self.client.images.pull(self.IMAGE)
-            log.info(f"Image pulled: {self.IMAGE}")
-            return {"image": self.IMAGE, "source": "pulled"}
+            log.info(f"Pulling Docker image {self._image}...")
+            self.client.images.pull(self._image)
+            log.info(f"Image pulled: {self._image}")
+            return {"image": self._image, "source": "pulled"}
         except APIError:
             pass
         
         try:
-            self.client.images.get(self.IMAGE)
-            log.debug(f"Image found locally: {self.IMAGE}")
-            return {"image": self.IMAGE, "source": "local"}
+            self.client.images.get(self._image)
+            log.debug(f"Image found locally: {self._image}")
+            return {"image": self._image, "source": "local"}
         except NotFound:
             raise RuntimeError(
-                f"Image {self.IMAGE} not found. "
-                f"Build it with: docker build -t {self.IMAGE} docker/{self.name}/"
+                f"Image {self._image} not found. "
+                f"Build it with: docker build -t {self._image} docker/{self.name}/"
             )
         
     def pull(self, version: str, dst: Path) -> dict:
-        repo = self.HF_REPOS.get(version)
+        repo = self._hf_repos.get(version)
         if repo is None:
             raise ValueError(f"Unknown version '{version}' for {self.name}")
 
@@ -383,7 +404,7 @@ class PolicyBackend(ABC):
     def _wait_for_ready(self, handle: PolicyHandle) -> bool:
         """Wait for container to be ready to accept requests."""
         base_url = self._get_base_url(handle)
-        deadline = time.time() + self.STARTUP_TIMEOUT
+        deadline = time.time() + self._startup_timeout
         
         log.debug(f"Waiting for container {handle.policy_id} to be ready...")
         
@@ -398,7 +419,7 @@ class PolicyBackend(ABC):
             except requests.exceptions.Timeout:
                 pass
             
-            time.sleep(self.HEALTH_CHECK_INTERVAL)
+            time.sleep(self._health_check_interval)
         
-        log.error(f"Container {handle.policy_id} failed to become ready within {self.STARTUP_TIMEOUT}s")
+        log.error(f"Container {handle.policy_id} failed to become ready within {self._startup_timeout}s")
         return False

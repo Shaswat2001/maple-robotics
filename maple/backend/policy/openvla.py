@@ -4,16 +4,15 @@ from maple.backend.policy.base import PolicyBackend, PolicyHandle
 
 class OpenVLAPolicy(PolicyBackend):
     name = "openvla"
-
-    IMAGE = "shaswatai/robotics_vla:openvla"
-    CONTAINER_PORT = 8000
-    STARTUP_TIMEOUT = 300
-    HEALTH_CHECK_INTERVAL = 5
-
-    HF_REPOS = {
+    _image = "shaswatai/robotics_vla:openvla"
+    _hf_repos = {
         "7b": "openvla/openvla-7b",
         "latest": "openvla/openvla-7b",
     }    
+    
+    _container_port: int = 8000
+    _startup_timeout: int = 300
+    _health_check_interval: int = 5
 
     def info(self) -> dict:
         return {
@@ -21,8 +20,8 @@ class OpenVLAPolicy(PolicyBackend):
             "type": "policy",
             "inputs": ["image", "instruction"],
             "outputs": ["action"],
-            "versions": list(self.HF_REPOS.keys()),
-            "image": self.IMAGE,
+            "versions": list(self._hf_repos.keys()),
+            "image": self._image,
         }
 
     def act(

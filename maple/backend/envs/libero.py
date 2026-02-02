@@ -9,11 +9,11 @@ class LiberoEnvBackend(EnvBackend):
     """Backend for LIBERO manipulation environments."""
     
     name = "libero"
-    IMAGE = "shaswatai/robotics_envs:libero"
-    CONTAINER_PORT = 8000
-    STARTUP_TIMEOUT = 120
-    HEALTH_CHECK_INTERVAL = 2
-    MEMORY_LIMIT = "4g"
+    _image = "shaswatai/robotics_envs:libero"
+    _container_port: int = 8000
+    _startup_timeout: int = 120
+    _health_check_interval: int = 2
+    _memory_limit: str = "4g"
     
     def _get_container_config(self) -> dict:
         """LIBERO-specific container configuration."""

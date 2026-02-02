@@ -2,8 +2,9 @@ import typer
 import shutil
 import requests
 import subprocess
-from typing import Optional
 from rich import print
+from typing import Optional
+from maple.config import config
 from maple.server.daemon import VLADaemon
 from maple.cmd.cli.misc import daemon_url
 
@@ -17,6 +18,9 @@ def serve_root(ctx: typer.Context,
     
     if ctx.invoked_subcommand is not None:
         return
+    
+    port = port or config.daemon.port
+    device = device or config.policy.default_device
     
     if detach:
         vla_bin = shutil.which("vla")
@@ -52,6 +56,10 @@ def serve_policy(name: str,
                  host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port"),
                  attn: str = typer.Option("sdpa", "--attn", "-a", help="Attention: flash_attention_2, sdpa, eager")):
     
+    port = port or config.daemon.port
+    device = device or config.policy.default_device
+    attn = attn or config.policy.attn_implementation
+
     payload = {"spec": name, "device": device, "attn_implementation": attn}
     if host_port is not None:
         payload["host_port"] = host_port
@@ -73,9 +81,19 @@ def serve_policy(name: str,
 def serve_env(name: str,
               port: int = typer.Option(8080, "--port"),
               num_envs: int = typer.Option(1, "--num-envs", min=1),
-              headless: bool = typer.Option(True, "--headless/--gui")):
+              host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port (only with num_envs=1)")):
     
-    r = requests.post(f"{daemon_url(port)}/env/serve", json={"name": name, "num_envs": num_envs})
+    port = port or config.daemon.port
+    num_envs = num_envs if num_envs is not None else config.env.default_num_envs
+    
+    payload = {"name": name, "num_envs": num_envs}
+    if host_port is not None:
+        payload["host_port"] = host_port
+    
+    r = requests.post(
+        f"{daemon_url(port)}/env/serve",
+        json=payload
+    )
 
     if r.status_code != 200:
         print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
