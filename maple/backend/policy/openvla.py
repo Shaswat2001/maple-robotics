@@ -1,6 +1,10 @@
 import requests
 from typing import List, Optional, Any
+from maple.utils.logging import get_logger
 from maple.backend.policy.base import PolicyBackend, PolicyHandle
+
+log = get_logger("policy.openvla")
+
 
 class OpenVLAPolicy(PolicyBackend):
     name = "openvla"
@@ -40,12 +44,16 @@ class OpenVLAPolicy(PolicyBackend):
         }
         if unnorm_key:
             payload["unnorm_key"] = unnorm_key
+        else:
+            log.error(f"Error: In OpenVLA unnorm_key can't be None")
+            raise RuntimeError(f"In OpenVLA unnorm_key can't be None")
         
         try:
             resp = requests.post(f"{base_url}/act", json=payload, timeout=300)
             resp.raise_for_status()
             return resp.json()["action"]
         except requests.exceptions.RequestException as e:
+            log.error(f"Failed to connect to policy container: {e}")
             raise RuntimeError(f"Failed to get action: {e}")
     
     def act_batch(
@@ -70,4 +78,5 @@ class OpenVLAPolicy(PolicyBackend):
             resp.raise_for_status()
             return resp.json()["actions"]
         except requests.exceptions.RequestException as e:
+            log.error(f"Failed to connect to policy container: {e}")
             raise RuntimeError(f"Failed to get batch actions: {e}")

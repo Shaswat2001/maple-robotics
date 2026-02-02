@@ -36,7 +36,7 @@ class RunRequest(BaseModel):
     seed: Optional[int] = None
     unnorm_key: Optional[str] = None
     save_video: bool = False
-    video_path: Optional[str] = None
+    video_dir: Optional[str] = None
 
 class PullPolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
@@ -218,8 +218,8 @@ class VLADaemon:
                 if req.save_video and frames:
                     try:                        
                         # Determine output path
-                        if req.video_path:
-                            output_path = Path(req.video_path)
+                        if req.video_dir:
+                            output_path = Path(req.video_dir) / f"{run_id}.mp4"
                         else:
                             output_path = Path.home() / ".maple" / "videos" / f"{run_id}.mp4"
                         

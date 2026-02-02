@@ -44,7 +44,7 @@ def run(
     seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed"),
     unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
     save_video: bool = typer.Option(False, "--save-video", "-v", help="Save rollout video"),
-    video_path: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
+    video_dir: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
     timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
     port: int = typer.Option(None, "--port"),
 ):
@@ -72,21 +72,21 @@ def run(
         payload["seed"] = seed
     if unnorm_key:
         payload["unnorm_key"] = unnorm_key
-    if video_path:
-        payload["video_path"] = video_path
-    
-    print(f"[cyan]Running policy on task...[/cyan]")
-    print(f"  Policy: {policy_id}")
-    print(f"  Env: {env_id}")
-    print(f"  Task: {task}")
-    print(f"  Max steps: {max_steps}")
+    if video_dir:
+        payload["video_dir"] = video_dir
     
     try:
-        r = requests.post(
-            f"{daemon_url(port)}/run",
-            json=payload,
-            timeout=int(max_steps * timeout),  # Generous timeout
-        )
+        with Progress(SpinnerColumn(),TextColumn("[progress.description]{task.description}")) as progress:
+            task = progress.add_task(f"Running policy on task...")
+            print(f"  Policy: {policy_id}")
+            print(f"  Env: {env_id}")
+            print(f"  Task: {task}")
+            print(f"  Max steps: {max_steps}")
+            r = requests.post(
+                f"{daemon_url(port)}/run",
+                json=payload,
+                timeout=int(max_steps * timeout),  # Generous timeout
+            )
     except requests.exceptions.Timeout:
         print(f"[red]Error:[/red] Request timed out after {max_steps * timeout}s")
         raise typer.Exit(1)
