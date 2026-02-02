@@ -3,11 +3,13 @@ import requests
 from rich import print
 from pathlib import Path
 from typing import Optional
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.cmd.cli.misc import daemon_url
 from maple.config import config, load_config
 from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app
 from maple.utils.logging import setup_logging, get_logger
+from maple.eval import BatchEvaluator, format_results_markdown, format_results_csv
 
 log = get_logger("cli")
 
@@ -43,11 +45,15 @@ def run(
     unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
     save_video: bool = typer.Option(False, "--save-video", "-v", help="Save rollout video"),
     video_path: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
-    port: int = typer.Option(8080, "--port"),
+    timeout: Optional[str] = typer.Option(200, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
+    port: int = typer.Option(None, "--port"),
 ):
     """
     Run a policy on an environment task.
     """
+
+    port = port or config.daemon.port
+    
     payload = {
         "policy_id": policy_id,
         "env_id": env_id,
@@ -75,10 +81,10 @@ def run(
         r = requests.post(
             f"{daemon_url(port)}/run",
             json=payload,
-            timeout=max_steps * 300,  # Generous timeout
+            timeout=max_steps * timeout,  # Generous timeout
         )
     except requests.exceptions.Timeout:
-        print(f"[red]Error:[/red] Request timed out after {max_steps * 300}s")
+        print(f"[red]Error:[/red] Request timed out after {max_steps * timeout}s")
         raise typer.Exit(1)
 
     if r.status_code != 200:
@@ -105,7 +111,7 @@ def run(
         print(f"  Video saved: {result.get('video_path')}")
 
 @app.command("status")
-def status(port: int = typer.Option(8080, "--port")):
+def status(port: int = typer.Option(None, "--port")):
 
     port = port or config.daemon.port
     try:
@@ -117,7 +123,7 @@ def status(port: int = typer.Option(8080, "--port")):
         print("[red]MAPLE daemon not running[/red]")
 
 @app.command("stop")
-def stop(port: int = typer.Option(8080, "--port")):
+def stop(port: int = typer.Option(None, "--port")):
     
     port = port or config.daemon.port
     try:
@@ -125,6 +131,141 @@ def stop(port: int = typer.Option(8080, "--port")):
         print("[green]MAPLE daemon stopped[/green]")
     except requests.exceptions.ConnectionError:
         print("[red]Daemon not running[/red]")
+
+@app.command("eval")
+def eval_cmd(
+    policy_id: str = typer.Argument(..., help="Policy ID (e.g., openvla-7b-a1b2c3d4)"),
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
+    backend: str = typer.Argument(..., help="Environment backend name"),
+    tasks: str = typer.Option(..., "--tasks", "-t", help="Tasks (comma-separated or suite name like libero_10)"),
+    seeds: str = typer.Option("0", "--seeds", "-s", help="Seeds (comma-separated, e.g., 0,1,2)"),
+    max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
+    unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
+    save_video: bool = typer.Option(None, "--save-video", "-v", help="Save rollout videos"),
+    video_dir: Optional[str] = typer.Option(None, "--video-dir", help="Directory for videos"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory for results"),
+    format: str = typer.Option("json", "--format", "-f", help="Output format: json, markdown, csv"),
+    parallel: int = typer.Option(1, "--parallel", "-p", help="Parallel evaluations (experimental)"),
+    port: int = typer.Option(None, "--port"),
+):
+    """
+    Run batch evaluation across multiple tasks and seeds.
+    
+    Examples:
+        # Evaluate on specific tasks
+        vla eval openvla-7b-abc libero-xyz --tasks libero_10/0,libero_10/1 --seeds 0,1,2
+        
+        # Evaluate on a suite (fetches tasks from env)
+        vla eval openvla-7b-abc libero-xyz --tasks libero_10 --seeds 0,1,2
+        
+        # Save results and videos
+        vla eval openvla-7b-abc libero-xyz --tasks libero_10 --output results/ --save-video
+    """
+    
+    # Use config defaults
+    port = port or config.daemon.port
+    max_steps = max_steps if max_steps is not None else config.eval.max_steps
+    save_video = save_video if save_video is not None else config.eval.save_video
+    video_dir = video_dir or config.eval.video_dir
+    output_dir = Path(output).expanduser() if output else Path(config.eval.results_dir).expanduser()
+    
+    # Parse seeds
+    seed_list = [int(s.strip()) for s in seeds.split(",")]
+    
+    # Parse tasks - check if it's a suite name or explicit task list
+    task_list = []
+    if "/" in tasks or "," in tasks:
+        # Explicit task list
+        task_list = [t.strip() for t in tasks.split(",")]
+    else:
+        # Suite name - fetch from daemon
+        print(f"[cyan]Fetching tasks for suite '{tasks}'...[/cyan]")
+        try:
+            r = requests.get(f"{daemon_url(port)}/env/tasks/{backend}", params={"suite": tasks})
+            if r.status_code == 200:
+                suite_tasks = r.json().get("tasks", [])
+                task_list = suite_tasks
+                print(f"  Found {len(task_list)} tasks")
+            else:
+                # Fall back to treating it as a task prefix
+                task_list = [tasks]
+        except Exception as e:
+            print(f"[yellow]Warning: Could not fetch suite tasks: {e}[/yellow]")
+            task_list = [tasks]
+    
+    if not task_list:
+        print("[red]Error: No tasks specified[/red]")
+        raise typer.Exit(1)
+    
+    total_episodes = len(task_list) * len(seed_list)
+    print(f"\n[bold cyan]Batch Evaluation[/bold cyan]")
+    print(f"  Policy: {policy_id}")
+    print(f"  Environment: {env_id}")
+    print(f"  Tasks: {len(task_list)}")
+    print(f"  Seeds: {seed_list}")
+    print(f"  Total episodes: {total_episodes}")
+    print(f"  Max steps: {max_steps}")
+    if save_video:
+        print(f"  Videos: {video_dir}")
+    print()
+    
+    evaluator = BatchEvaluator(daemon_url=daemon_url(port))
+    
+    # Progress tracking
+    completed = 0
+    successful = 0
+    
+    def on_progress(done, total, result):
+        nonlocal completed, successful
+        completed = done
+        if result.success:
+            successful += 1
+    
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+        ) as progress:
+            task = progress.add_task(f"Running {total_episodes} episodes...", total=total_episodes)
+            
+            results = evaluator.run(
+                policy_id=policy_id,
+                env_id=env_id,
+                tasks=task_list,
+                seeds=seed_list,
+                max_steps=max_steps,
+                unnorm_key=unnorm_key,
+                save_video=save_video,
+                video_dir=video_dir,
+                parallel=parallel,
+                progress_callback=lambda d, t, r: progress.update(task, completed=d),
+            )
+    except Exception as e:
+        print(f"[red]Error during evaluation: {e}[/red]")
+        raise typer.Exit(1)
+    
+    # Print summary
+    print(f"\n{results.summary()}")
+    
+    # Save results
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # JSON (always save)
+    json_path = output_dir / f"{results.batch_id}.json"
+    results.save(json_path)
+    
+    # Additional formats
+    if format == "markdown" or format == "all":
+        md_path = output_dir / f"{results.batch_id}.md"
+        md_path.write_text(format_results_markdown(results))
+        print(f"[green]✓ Markdown saved:[/green] {md_path}")
+    
+    if format == "csv" or format == "all":
+        csv_path = output_dir / f"{results.batch_id}.csv"
+        csv_path.write_text(format_results_csv(results))
+        print(f"[green]✓ CSV saved:[/green] {csv_path}")
+    
+    print(f"[green]✓ Results saved:[/green] {json_path}")
 
 def main():
     app()

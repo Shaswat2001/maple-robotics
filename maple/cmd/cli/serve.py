@@ -12,8 +12,8 @@ serve_app = typer.Typer(no_args_is_help=False, invoke_without_command=True)
 
 @serve_app.callback()
 def serve_root(ctx: typer.Context,
-               port: int = typer.Option(8080, "--port"),
-               device: str = typer.Option("cuda:0", "--device"),
+               port: int = typer.Option(None, "--port"),
+               device: str = typer.Option(None, "--device"),
                detach: bool = typer.Option(False, "--detach")):
     
     if ctx.invoked_subcommand is not None:
@@ -51,10 +51,10 @@ def serve_root(ctx: typer.Context,
 
 @serve_app.command("policy")
 def serve_policy(name: str,
-                 port: int = typer.Option(8080, "--port"),
-                 device: str = typer.Option("cuda:0", "--device", "-d"),
+                 port: int = typer.Option(None, "--port"),
+                 device: str = typer.Option(None, "--device", "-d"),
                  host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port"),
-                 attn: str = typer.Option("sdpa", "--attn", "-a", help="Attention: flash_attention_2, sdpa, eager")):
+                 attn: str = typer.Option(None, "--attn", "-a", help="Attention: flash_attention_2, sdpa, eager")):
     
     port = port or config.daemon.port
     device = device or config.policy.default_device
@@ -79,8 +79,8 @@ def serve_policy(name: str,
 
 @serve_app.command("env")
 def serve_env(name: str,
-              port: int = typer.Option(8080, "--port"),
-              num_envs: int = typer.Option(1, "--num-envs", min=1),
+              port: int = typer.Option(None, "--port"),
+              num_envs: int = typer.Option(None, "--num-envs", min=1),
               host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port (only with num_envs=1)")):
     
     port = port or config.daemon.port

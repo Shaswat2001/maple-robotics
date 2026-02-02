@@ -8,7 +8,7 @@ config_app = typer.Typer(no_args_is_help=True)
 @config_app.command("show")
 def config_show():
     """Show current configuration"""
-    import yaml
+
     print("[cyan]Current configuration:[/cyan]\n")
     print(yaml.dump(config.to_dict(), default_flow_style=False, sort_keys=False))
 

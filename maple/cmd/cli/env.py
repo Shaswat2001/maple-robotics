@@ -2,16 +2,18 @@ import typer
 import requests
 from rich import print
 from typing import List, Optional
+from maple.config import config
 from maple.cmd.cli.misc import daemon_url
 
 env_app = typer.Typer(no_args_is_help=True)
 
 @env_app.command("setup")
-def setup_env(port: int = typer.Option(8080, "--port"),
+def setup_env(port: int = typer.Option(None, "--port"),
               env_id: str = typer.Option(None, "--id", help="Environment ID"),
               task: str = typer.Option(None, "--task", "-t", help="Task spec (e.g., libero_10/0)"),
               seed: int = typer.Option(None, "--seed", "-s")):
     
+    port = port or config.daemon.port
 
     if env_id is None or task is None:
         print(f"[red]Error: environment id or task is None[/red]")
@@ -32,10 +34,12 @@ def setup_env(port: int = typer.Option(8080, "--port"),
     print(f"  Instruction: {data.get('instruction')}")
 
 @env_app.command("reset")
-def reset_env(port: int = typer.Option(8080, "--port"),
+def reset_env(port: int = typer.Option(None, "--port"),
               env_id: str = typer.Option(None, "--id", help="Environment ID"),
               seed: int = typer.Option(None, "--seed", "-s")):
     
+    port = port or config.daemon.port
+
     if env_id is None:
         print(f"[red]Error: environment id is None[/red]")
         raise typer.Exit(1)
@@ -59,8 +63,10 @@ def reset_env(port: int = typer.Option(8080, "--port"),
 @env_app.command("step")
 def step_env(env_id: str = typer.Option(None, "--id", help="Environment ID"),
              action: List[float] = typer.Option(..., "--action", "-a", help="Action values"),
-             port: int = typer.Option(8080, "--port")):
+             port: int = typer.Option(None, "--port")):
     
+    port = port or config.daemon.port
+
     if env_id is None:
         print(f"[red]Error: environment id is None[/red]")
         raise typer.Exit(1)
@@ -81,8 +87,9 @@ def step_env(env_id: str = typer.Option(None, "--id", help="Environment ID"),
     print(f"  Truncated: {data.get('truncated', False)}")
 
 @env_app.command("info")
-def env_info(port: int = typer.Option(8080, "--port"), env_id: str = typer.Option(None, "--id",help="Environment ID")):
+def env_info(port: int = typer.Option(None, "--port"), env_id: str = typer.Option(None, "--id",help="Environment ID")):
 
+    port = port or config.daemon.port
     r = requests.get(f"{daemon_url(port)}/env/info/{env_id}")
     
     if r.status_code != 200:
@@ -101,8 +108,11 @@ def env_info(port: int = typer.Option(8080, "--port"), env_id: str = typer.Optio
 @env_app.command("tasks")
 def env_tasks(backend: str = typer.Argument("libero", help="Environment backend name"),
               suite: Optional[str] = typer.Option(None, "--suite", "-s", help="Filter by suite"),
-              port: int = typer.Option(8080, "--port")):
+              port: int = typer.Option(None, "--port")):
     """List available tasks for an environment"""
+
+    port = port or config.daemon.port
+
     params = {}
     if suite:
         params["suite"] = suite
@@ -134,8 +144,9 @@ def env_tasks(backend: str = typer.Argument("libero", help="Environment backend 
                 print(f"  ... and {len(tasks) - 10} more")
 
 @env_app.command("stop")
-def stop_env(port: int = typer.Option(8080, "--port"), env_id: str = typer.Option(None, "--id",help="Environment ID")):
+def stop_env(port: int = typer.Option(None, "--port"), env_id: str = typer.Option(None, "--id",help="Environment ID")):
 
+    port = port or config.daemon.port
     if env_id is None:
         r = requests.post(f"{daemon_url(port)}/env/stop")
         
