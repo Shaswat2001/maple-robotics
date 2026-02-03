@@ -1,3 +1,5 @@
+"""Base adapter."""
+
 import io
 import math
 import base64
