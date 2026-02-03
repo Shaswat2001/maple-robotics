@@ -93,13 +93,13 @@ class PolicyBackend(ABC):
     def act(self, handle: PolicyHandle, image: Any, instruction: str, unnorm_key: Optional[str] = None) -> List[float]:
         pass
 
-    @abstractmethod
-    def act_batch(self, 
-        handle: PolicyHandle, 
-        images: List[Any], 
-        instructions: List[str],
-        unnorm_key: Optional[str] = None) -> List[List[float]]:
-        pass
+    # @abstractmethod
+    # def act_batch(self, 
+    #     handle: PolicyHandle, 
+    #     images: List[Any], 
+    #     instructions: List[str],
+    #     unnorm_key: Optional[str] = None) -> List[List[float]]:
+    #     pass
 
     def _get_base_url(self, handle: PolicyHandle) -> str:
         """Get base URL for RPC calls."""
@@ -152,7 +152,7 @@ class PolicyBackend(ABC):
               host_port: Optional[int] = None,
               attn_implementation: str = "sdpa") -> PolicyHandle:
         
-        policy_id = f"openvla-{version}-{uuid.uuid4().hex[:8]}"
+        policy_id = f"{self.name}-{version}-{uuid.uuid4().hex[:8]}"
 
         log.info(f"Starting policy container: {policy_id}")
         log.debug(f"  Model path: {model_path}")
@@ -252,18 +252,17 @@ class PolicyBackend(ABC):
             time.sleep(0.5)
         return None
     
-    def _load_model(self, handle: PolicyHandle, device: str, attn_implementation: str):
+    def _load_model(self, handle: PolicyHandle, device: str):
         """Load model inside the container."""
         base_url = self._get_base_url(handle)
         
-        log.info(f"Loading model on {device} with {attn_implementation} attention...")
+        log.info(f"Loading model on {device}")
         
         resp = requests.post(
             f"{base_url}/load",
             json={
                 "model_path": "/models/weights",
                 "device": device,
-                "attn_implementation": attn_implementation,
             },
             timeout=self._startup_timeout,
         )

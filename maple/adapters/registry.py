@@ -1,10 +1,11 @@
 from typing import Dict, Type
-from maple.adapters.custom import OpenVLALiberoAdapter
+from maple.adapters.custom import OpenVLALiberoAdapter, SmolVLALiberoAdapter
 from maple.adapters.base import Adapter
 
 # Global registry
 ADAPTERS: Dict[str, Adapter] = {
-    "openvla:libero": OpenVLALiberoAdapter
+    "openvla:libero": OpenVLALiberoAdapter,
+    "smolvla:libero": SmolVLALiberoAdapter
 }
 
 def get_adapter(policy: str, env: str) -> Adapter:

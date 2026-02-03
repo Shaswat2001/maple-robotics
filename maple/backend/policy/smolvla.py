@@ -3,15 +3,14 @@ from typing import List, Optional, Any
 from maple.utils.logging import get_logger
 from maple.backend.policy.base import PolicyBackend, PolicyHandle
 
-log = get_logger("policy.openvla")
+log = get_logger("policy.smolvla")
 
-
-class OpenVLAPolicy(PolicyBackend):
-    name = "openvla"
-    _image = "shaswatai/robotics_vla:openvla"
+class SmolVLAPolicy(PolicyBackend):
+    name = "smolvla"
+    _image = "shaswatai/robotics_vla:smolvla"
     _hf_repos = {
-        "7b": "openvla/openvla-7b",
-        "latest": "openvla/openvla-7b",
+        "libero": "HuggingFaceVLA/smolvla_libero",
+        "base": "lerobot/smolvla_base"
     }    
     
     _container_port: int = 8000
@@ -22,7 +21,7 @@ class OpenVLAPolicy(PolicyBackend):
         return {
             "name": self.name,
             "type": "policy",
-            "inputs": ["image", "instruction"],
+            "inputs": ["image", "state", "instruction"],
             "outputs": ["action"],
             "versions": list(self._hf_repos.keys()),
             "image": self._image,
@@ -33,23 +32,20 @@ class OpenVLAPolicy(PolicyBackend):
         handle: PolicyHandle, 
         payload: Any, 
         instruction: str,
-        unnorm_key: Optional[str] = None,
     ) -> List[float]:
         """Get action for a single observation."""
         base_url = self._get_base_url(handle)
         
-        payload = {
+        vla_payload = {
             "image": self._encode_image(payload["image"]),
             "instruction": instruction,
         }
-        if unnorm_key:
-            payload["unnorm_key"] = unnorm_key
-        else:
-            log.error(f"Error: In OpenVLA unnorm_key can't be None")
-            raise RuntimeError(f"In OpenVLA unnorm_key can't be None")
+
+        if "image2" in payload:
+            vla_payload["image2"] = self._encode_image(payload["image2"])
         
         try:
-            resp = requests.post(f"{base_url}/act", json=payload, timeout=300)
+            resp = requests.post(f"{base_url}/act", json=vla_payload, timeout=300)
             resp.raise_for_status()
             return resp.json()["action"]
         except requests.exceptions.RequestException as e:

@@ -1,10 +1,12 @@
 from maple.backend.policy.openvla import OpenVLAPolicy
+from maple.backend.policy.smolvla import SmolVLAPolicy
 from maple.backend.envs.libero import LiberoEnvBackend
 
 ENV_BACKENDS = {
-    "libero": LiberoEnvBackend,
+    "libero": LiberoEnvBackend
 }
 
 POLICY_BACKENDS = {
     "openvla": OpenVLAPolicy,
+    "smolvla": SmolVLAPolicy
 }
