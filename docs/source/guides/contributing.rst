@@ -34,25 +34,25 @@ Running Tests
 
    pytest tests/
 
-Code Style
-==========
+.. Code Style
+.. ==========
 
-We use ``black`` for formatting and ``ruff`` for linting:
+.. We use ``black`` for formatting and ``ruff`` for linting:
 
-.. code-block:: bash
+.. .. code-block:: bash
 
-   black maple/
-   ruff check maple/
+..    black maple/
+..    ruff check maple/
 
-Building Documentation
-======================
+.. Building Documentation
+.. ======================
 
-.. code-block:: bash
+.. .. code-block:: bash
 
-   cd docs
-   make html
+..    cd docs
+..    make html
 
-Open ``docs/_build/html/index.html`` in your browser.
+.. Open ``docs/_build/html/index.html`` in your browser.
 
 Submitting Changes
 ==================

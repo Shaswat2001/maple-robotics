@@ -28,11 +28,11 @@ To run in the background:
 Step 2: Pull a Policy
 =====================
 
-Download policy weights from Hugging Face:
+Download policy weights from Hugging Face and pull docker image:
 
 .. code-block:: bash
 
-   maple pull policy openvla:7b
+   maple pull policy openvla:latest
 
 This downloads the OpenVLA 7B model to ``~/.maple/weights/``.
 
@@ -43,14 +43,14 @@ Load the policy into a Docker container:
 
 .. code-block:: bash
 
-   maple serve policy openvla:7b
+   maple serve policy openvla:latest
 
 Output:
 
 .. code-block:: text
 
-   ✓ Serving policy: openvla:7b
-     Policy ID: openvla-7b-a1b2c3d4
+   ✓ Serving policy: openvla:latest
+     Policy ID: openvla-latest-a1b2c3d4
      Port: http://localhost:50123
      Device: cuda:0
 
@@ -111,7 +111,7 @@ Evaluate across multiple tasks and seeds:
 
 .. code-block:: bash
 
-   maple eval openvla-7b-a1b2c3d4 libero-x1y2z3w4 \
+   maple eval openvla-7b-a1b2c3d4 libero-x1y2z3w4 libero \
        --tasks libero_10 \
        --seeds 0,1,2 \
        --output results/
