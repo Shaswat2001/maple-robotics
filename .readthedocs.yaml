@@ -12,7 +12,9 @@ python:
   install:
     - requirements: docs/python_docs_requirements.txt
     - method: pip
-      path: maple-robotics
+      path: .
+      extra_requirements:
+        - docs
 
 # Build documentation in the Sphinx source directory
 sphinx:

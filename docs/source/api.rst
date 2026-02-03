@@ -5,4 +5,4 @@ API
    :recursive:
    :toctree: generated
 
-   maple-robotics
+   maple
