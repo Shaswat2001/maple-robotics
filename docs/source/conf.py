@@ -23,7 +23,6 @@ author = "Shaswat Garg"
 
 # The full version, including alpha/beta/rc tags
 version = release = "0.0.2"
-autosummary_generate = True
 
 # -- General configuration ---------------------------------------------------
 
