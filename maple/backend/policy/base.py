@@ -252,17 +252,18 @@ class PolicyBackend(ABC):
             time.sleep(0.5)
         return None
     
-    def _load_model(self, handle: PolicyHandle, device: str):
+    def _load_model(self, handle: PolicyHandle, device: str, attn_implementation: str):
         """Load model inside the container."""
         base_url = self._get_base_url(handle)
         
-        log.info(f"Loading model on {device}")
+        log.info(f"Loading model on {device} with {attn_implementation} attention...")
         
         resp = requests.post(
             f"{base_url}/load",
             json={
                 "model_path": "/models/weights",
                 "device": device,
+                "attn_implementation": attn_implementation,
             },
             timeout=self._startup_timeout,
         )

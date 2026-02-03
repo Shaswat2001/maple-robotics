@@ -5,7 +5,6 @@ from maple.backend.policy.base import PolicyBackend, PolicyHandle
 
 log = get_logger("policy.openvla")
 
-
 class OpenVLAPolicy(PolicyBackend):
     name = "openvla"
     _image = "shaswatai/robotics_vla:openvla"
