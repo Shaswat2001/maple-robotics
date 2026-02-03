@@ -4,7 +4,7 @@
 Maple - Robotics Policy Evaluation CLI
 ======================================
 
-.. image:: assets/logo.svg
+.. image:: assets/MAPLE.svg
    :alt: Maple Logo
    :align: center
    :width: 300px

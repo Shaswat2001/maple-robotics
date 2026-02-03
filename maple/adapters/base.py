@@ -7,18 +7,34 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 class Adapter(ABC):
-
+    """
+    Base adapter between an environment and a policy.
+    """
     
     @abstractmethod
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
+        """Abstract method to transform env observation to policy input.
+        
+        :param raw_obs: Raw observation from the environment
+        :return: Tranformed observation needed by the policy (model)
+        """
         pass
         
     @abstractmethod
     def transform_action(self, raw_action: List[float]) -> List[float]:
+        """Abstract method to transform policy output to env action.
+        
+        :param raw_action: Raw output from the policy
+        :return: Tranformed action needed by the env
+        """
         pass
 
-    def decode_image(self, image: str) -> str:
-
+    def decode_image(self, image: str) -> Image.Image:
+        """Decode base64 image to PIL Image.
+        
+        :param image: Encoded image (base64 format)
+        :return: Decoded PIL image
+        """
         if isinstance(image, dict) and image.get("type") == "image":
             image_b64 = image["data"]
         elif isinstance(image, str):
