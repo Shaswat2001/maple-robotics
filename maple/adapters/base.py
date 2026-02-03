@@ -12,13 +12,16 @@ class Adapter(ABC):
     """
     Base adapter between an environment and a policy.
     """
+
+    def __init__(self):
+        pass
     
     @abstractmethod
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
         """Abstract method to transform env observation to policy input.
         
-        :param raw_obs: Raw observation from the environment
-        :return: Tranformed observation needed by the policy (model)
+        :param raw_obs: Raw observation from the environment.
+        :return: Tranformed observation needed by the policy (model).
         """
         pass
         
@@ -26,16 +29,16 @@ class Adapter(ABC):
     def transform_action(self, raw_action: List[float]) -> List[float]:
         """Abstract method to transform policy output to env action.
         
-        :param raw_action: Raw output from the policy
-        :return: Tranformed action needed by the env
+        :param raw_action: Raw output from the policy.
+        :return: Tranformed action needed by the env.
         """
         pass
 
     def decode_image(self, image: str) -> Image.Image:
         """Decode base64 image to PIL Image.
         
-        :param image: Encoded image (base64 format)
-        :return: Decoded PIL image
+        :param image: Encoded image (base64 format).
+        :return: Decoded PIL image.
         """
         if isinstance(image, dict) and image.get("type") == "image":
             image_b64 = image["data"]
@@ -51,9 +54,9 @@ class Adapter(ABC):
     def resize_image(self, image: Image.Image, size: Tuple) -> Image.Image:
         """Resize a PIL image to a specific size.
         
-        :param image: PIL image
-        :param size: Desired shape of the image
-        :return: Resized PIL image
+        :param image: PIL image.
+        :param size: Desired shape of the image.
+        :return: Resized PIL image.
         """
         if image.size != size:
             image = image.resize(size, Image.Resampling.LANCZOS)
@@ -75,8 +78,8 @@ class Adapter(ABC):
     def rotate_image(self, image: Image.Image) -> Image.Image:
         """Rotate a PIL image by 180 degrees.
         
-        :param image: PIL image
-        :return: Rotated PIL image
+        :param image: PIL image.
+        :return: Rotated PIL image.
         """
 
         image = image.rotate(180)
@@ -85,9 +88,9 @@ class Adapter(ABC):
     def normalize_gripper_action(self, action: np.ndarray, binarize: bool= True) -> np.ndarray:
         """Normalize the gripper between 0 and 1.
         
-        :param action: A numpy array containing the action
-        :param binarize: If the gripper action is binary value (0/1)
-        :return: Action array with normalized gripper value
+        :param action: A numpy array containing the action.
+        :param binarize: If the gripper action is binary value (0/1).
+        :return: Action array with normalized gripper value.
         """
 
         # Just normalize the last action to [-1,+1].
@@ -102,8 +105,8 @@ class Adapter(ABC):
     def invert_gripper_action(self, action: np.ndarray) -> np.ndarray:
         """Invert the gripper value in the action.
         
-        :param action: A numpy array containing the action
-        :return: Action array with inverted gripper value
+        :param action: A numpy array containing the action.
+        :return: Action array with inverted gripper value.
         """
 
         action[..., -1] = action[..., -1] * -1.0
@@ -111,10 +114,10 @@ class Adapter(ABC):
     
     def quat2axisangle(self, quat: np.ndarray) -> np.ndarray:
         """
-        Converts quaternion to axis angle
+        Converts quaternion to axis angle.
         
-        :param quat: A numpy array of quaternion
-        :return: Tranformed axis angle equivalent of the quaternion array
+        :param quat: A numpy array of quaternion.
+        :return: Tranformed axis angle equivalent of the quaternion array.
         """
         # clip quaternion
         if quat[3] > 1.0:

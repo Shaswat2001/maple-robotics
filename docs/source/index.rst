@@ -1,7 +1,7 @@
 .. Maple documentation master file
 
 ======================================
-Maple - Robotics Policy Evaluation CLI
+Maple - Model and Policy Learning Evaluation
 ======================================
 
 .. image:: assets/MAPLE.svg
