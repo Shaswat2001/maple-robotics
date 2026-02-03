@@ -9,6 +9,13 @@ ADAPTERS: Dict[str, Adapter] = {
 }
 
 def get_adapter(policy: str, env: str) -> Adapter:
+    """
+    Get adapter given the policy and environment name.
+
+    :param policy: policy name
+    :param env: environment name
+    :return: Adapter class given the policy:env input
+    """
 
     key = f"{policy}:{env}"
     if key in ADAPTERS:
@@ -20,11 +27,19 @@ def get_adapter(policy: str, env: str) -> Adapter:
     if key_base in ADAPTERS:
         return ADAPTERS[key_base]()
     
-def register(policy: str, env: str, cls: Type[Adapter]):
-    """Register an adapter class at runtime."""
+def register(policy: str, env: str, cls: Type[Adapter]) -> None:
+    """Register an adapter class at runtime.
+    
+    :param policy: policy name
+    :param env: environment name
+    :param cls: Adapter class for registry
+    """
     ADAPTERS[f"{policy}:{env}"] = cls
 
 
 def list_adapters() -> Dict[str, dict]:
-    """Return info for every registered adapter."""
+    """Return info for every registered adapter.
+    
+    :return Adapter class for registry
+    """
     return {k: cls().get_info() for k, cls in ADAPTERS.items()}

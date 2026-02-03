@@ -6,7 +6,7 @@ import base64
 import numpy as np
 from PIL import Image
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 class Adapter(ABC):
     """
@@ -48,14 +48,22 @@ class Adapter(ABC):
         img = Image.open(io.BytesIO(img_bytes))
         return img
     
-    def resize_image(self, img, size):
-
-        if img.size != size:
-            img = img.resize(size, Image.Resampling.LANCZOS)
-        return img
+    def resize_image(self, image: Image.Image, size: Tuple) -> Image.Image:
+        """Resize a PIL image to a specific size.
+        
+        :param image: PIL image
+        :param size: Desired shape of the image
+        :return: Resized PIL image
+        """
+        if image.size != size:
+            image = image.resize(size, Image.Resampling.LANCZOS)
+        return image
 
     def get_info(self) -> Dict[str, Any]:
-
+        """Get the info of specifc policy-env adapter.
+        
+        :return: A dictionary containing the adapter information.
+        """
         return {
             "name": self.name,
             "policy": self.policy,
@@ -64,11 +72,24 @@ class Adapter(ABC):
             "obs_image_size": self.image_size,
         }
     
-    def rotate_image(self, img: Image.Image):
-        img = img.rotate(180)
-        return img
+    def rotate_image(self, image: Image.Image) -> Image.Image:
+        """Rotate a PIL image by 180 degrees.
+        
+        :param image: PIL image
+        :return: Rotated PIL image
+        """
 
-    def normalize_gripper_action(self, action, binarize=True):
+        image = image.rotate(180)
+        return image
+
+    def normalize_gripper_action(self, action: np.ndarray, binarize: bool= True) -> np.ndarray:
+        """Normalize the gripper between 0 and 1.
+        
+        :param action: A numpy array containing the action
+        :param binarize: If the gripper action is binary value (0/1)
+        :return: Action array with normalized gripper value
+        """
+
         # Just normalize the last action to [-1,+1].
         orig_low, orig_high = 0.0, 1.0
         action[..., -1] = 2 * (action[..., -1] - orig_low) / (orig_high - orig_low) - 1
@@ -78,13 +99,22 @@ class Adapter(ABC):
 
         return action
 
-    def invert_gripper_action(self, action):
+    def invert_gripper_action(self, action: np.ndarray) -> np.ndarray:
+        """Invert the gripper value in the action.
+        
+        :param action: A numpy array containing the action
+        :return: Action array with inverted gripper value
+        """
+
         action[..., -1] = action[..., -1] * -1.0
         return action
     
-    def quat2axisangle(self, quat):
+    def quat2axisangle(self, quat: np.ndarray) -> np.ndarray:
         """
-        Copied from robosuite: https://github.com/ARISE-Initiative/robosuite/blob/eafb81f54ffc104f905ee48a16bb15f059176ad3/robosuite/utils/transform_utils.py#L490C1-L512C55
+        Converts quaternion to axis angle
+        
+        :param quat: A numpy array of quaternion
+        :return: Tranformed axis angle equivalent of the quaternion array
         """
         # clip quaternion
         if quat[3] > 1.0:

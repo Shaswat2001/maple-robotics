@@ -182,6 +182,26 @@ Quick Links
 
 .. toctree::
    :maxdepth: 2
+   :caption: Getting Started
+
+   guides/installation
+   guides/quickstart
+   guides/configuration
+
+.. toctree::
+   :maxdepth: 2
+   :caption: CLI Reference
+
+   commands/serve
+   commands/pull
+   commands/eval
+   commands/policy
+   commands/env
+   commands/list
+   commands/config
+
+.. toctree::
+   :maxdepth: 2
    :caption: API Reference
 
    api
