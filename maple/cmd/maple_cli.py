@@ -7,7 +7,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.cmd.cli.misc import daemon_url
 from maple.config import config, load_config
-from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app
+from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app
 from maple.utils.logging import setup_logging, get_logger
 from maple.eval import BatchEvaluator, format_results_markdown, format_results_csv
 
@@ -32,6 +32,7 @@ app.add_typer(pull_app, name="pull", help="Download management of envs and polic
 app.add_typer(serve_app, name="serve", help="Spin docker containers")
 app.add_typer(list_app, name="list")
 app.add_typer(env_app, name="env")
+app.add_typer(policy_app, name="policy")
 app.add_typer(config_app, name="config", help="Configuration management")
 
 @app.command("run")
