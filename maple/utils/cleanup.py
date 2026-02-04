@@ -56,7 +56,7 @@ class CleanupManager:
         Creates the instance on first call and registers cleanup handlers.
         Thread-safe implementation using double-checked locking pattern.
         
-        return: The singleton CleanupManager instance.
+        :return: The singleton CleanupManager instance.
         """
         if cls._instance is None:
             with cls._lock:
@@ -72,7 +72,7 @@ class CleanupManager:
         Lazily creates and caches a Docker client. Logs a warning if
         Docker is not available or client creation fails.
         
-        return: Docker client instance, or None if unavailable.
+        :return: Docker client instance, or None if unavailable.
         """
         if self._docker_client is None:
             try:
@@ -118,8 +118,8 @@ class CleanupManager:
         Performs cleanup and then calls the original signal handler if one
         existed, or exits with appropriate exit code.
         
-        param: signum: Signal number (e.g., signal.SIGINT, signal.SIGTERM).
-        param: frame: Current stack frame (unused but required by signal API).
+        :param signum: Signal number (e.g., signal.SIGINT, signal.SIGTERM).
+        :param frame: Current stack frame (unused but required by signal API).
         """
         sig_name = signal.Signals(signum).name
         log.info(f"Received {sig_name}, cleaning up...")
@@ -141,8 +141,8 @@ class CleanupManager:
         Adds the container to the cleanup registry. The container will be
         stopped and removed when cleanup_all() is called.
         
-        param: container_id: Docker container ID to register.
-        param: name: Optional human-readable name for logging purposes.
+        :param container_id: Docker container ID to register.
+        :param name: Optional human-readable name for logging purposes.
         """
         self._containers.add(container_id)
         log.debug(f"Registered container for cleanup: {name or container_id[:12]}")
@@ -154,7 +154,7 @@ class CleanupManager:
         Removes the container from the cleanup registry. Typically called
         when a container is stopped manually and cleanup is no longer needed.
         
-        param: container_id: Docker container ID to unregister.
+        :param container_id: Docker container ID to unregister.
         """
         self._containers.discard(container_id)
         log.debug(f"Unregistered container: {container_id[:12]}")
@@ -167,8 +167,8 @@ class CleanupManager:
         are stopped. Useful for cleaning up non-Docker resources like
         temporary files, locks, or connections.
         
-        param: name: Unique identifier for the cleanup handler.
-        param: handler: Callable that performs cleanup (takes no arguments).
+        :param name: Unique identifier for the cleanup handler.
+        :param handler: Callable that performs cleanup (takes no arguments).
         """
         self._cleanup_handlers[name] = handler
         log.debug(f"Registered cleanup handler: {name}")
@@ -180,7 +180,7 @@ class CleanupManager:
         Removes a previously registered cleanup handler. Safe to call
         even if the handler doesn't exist.
         
-        param: name: Identifier of the cleanup handler to remove.
+        :param name: Identifier of the cleanup handler to remove.
         """
         self._cleanup_handlers.pop(name, None)
     
@@ -236,8 +236,8 @@ class CleanupManager:
         Logs all operations and handles cases where the container may
         already be stopped or removed.
         
-        param: client: Docker client instance.
-        param: container_id: ID of the container to stop and remove.
+        :param client: Docker client instance.
+        :param container_id: ID of the container to stop and remove.
         """
         try:
             container = client.containers.get(container_id)
@@ -262,7 +262,7 @@ class CleanupManager:
         
         Returns a copy of the internal set to prevent external modification.
         
-        return: Set of Docker container IDs registered for cleanup.
+        :return: Set of Docker container IDs registered for cleanup.
         """
         return self._containers.copy()
     
@@ -270,7 +270,7 @@ class CleanupManager:
         """
         Get number of registered containers.
         
-        return: Count of containers currently registered for cleanup.
+        :return: Count of containers currently registered for cleanup.
         """
         return len(self._containers)
 
@@ -283,8 +283,8 @@ def register_container(container_id: str, name: str = None) -> None:
     
     Convenience function that uses the global CleanupManager singleton.
     
-    param: container_id: Docker container ID to register.
-    param: name: Optional human-readable name for logging.
+    :param container_id: Docker container ID to register.
+    :param name: Optional human-readable name for logging.
     """
     CleanupManager.instance().register_container(container_id, name)
 
@@ -295,7 +295,7 @@ def unregister_container(container_id: str) -> None:
     
     Convenience function that uses the global CleanupManager singleton.
     
-    param: container_id: Docker container ID to unregister.
+    :param container_id: Docker container ID to unregister.
     """
     CleanupManager.instance().unregister_container(container_id)
 
@@ -306,8 +306,8 @@ def register_cleanup_handler(name: str, handler: Callable) -> None:
     
     Convenience function that uses the global CleanupManager singleton.
     
-    param: name: Unique identifier for the cleanup handler.
-    param: handler: Callable that performs cleanup (takes no arguments).
+    :param name: Unique identifier for the cleanup handler.
+    :param handler: Callable that performs cleanup (takes no arguments).
     """
     CleanupManager.instance().register_handler(name, handler)
 

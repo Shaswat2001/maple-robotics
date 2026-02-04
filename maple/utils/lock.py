@@ -54,7 +54,7 @@ class DaemonLock:
         Creates a lock instance with the specified socket path. Does not
         acquire the lock - call acquire() or use as context manager.
         
-        param: socket_path: Optional custom path for the socket file.
+        :param socket_path: Optional custom path for the socket file.
                            Defaults to XDG_RUNTIME_DIR/vla-daemon.sock
                            or /tmp/vla-daemon.sock.
         """
@@ -72,7 +72,7 @@ class DaemonLock:
         exists but no daemon responds, it's removed and lock acquisition
         is retried.
         
-        return: True if lock was successfully acquired, False if another
+        :return: True if lock was successfully acquired, False if another
                 daemon is already running or lock acquisition failed.
         """
         if self._socket:
@@ -136,7 +136,7 @@ class DaemonLock:
         A successful connection indicates a daemon is actively listening.
         A failed connection indicates a stale socket file.
         
-        return: True if daemon is running and listening on the socket,
+        :return: True if daemon is running and listening on the socket,
                 False if socket file is stale (no daemon listening).
         """
         try:
@@ -155,7 +155,7 @@ class DaemonLock:
         Attempts to acquire the daemon lock. Raises RuntimeError if
         acquisition fails (another daemon is running).
         
-        return: Self for use in 'with' statement.
+        :return: Self for use in 'with' statement.
         :raises RuntimeError: If lock cannot be acquired.
         """
         if not self.acquire():
@@ -169,7 +169,7 @@ class DaemonLock:
         Automatically releases the lock when exiting the 'with' block,
         even if an exception occurred.
         
-        param: args: Exception information (type, value, traceback) if
+        :param args: Exception information (type, value, traceback) if
                     an exception occurred, otherwise (None, None, None).
         """
         self.release()
@@ -186,9 +186,9 @@ def is_daemon_running(socket_path: Path = None) -> bool:
     This is a non-invasive check that doesn't interfere with the
     running daemon.
     
-    param: socket_path: Optional custom socket path to check.
+    :param socket_path: Optional custom socket path to check.
                        Defaults to the standard daemon socket path.
-    return: True if daemon is running and responsive, False otherwise.
+    :return: True if daemon is running and responsive, False otherwise.
     """
     socket_path = socket_path or _SOCKET_PATH
 
@@ -213,6 +213,6 @@ def get_socket_path() -> Path:
     respects the XDG_RUNTIME_DIR environment variable if set, otherwise
     falls back to /tmp.
     
-    return: Path object pointing to the daemon socket file location.
+    :return: Path object pointing to the daemon socket file location.
     """
     return _SOCKET_PATH

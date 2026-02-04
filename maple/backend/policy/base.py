@@ -154,16 +154,16 @@ class PolicyBackend(ABC):
     def _get_base_url(self, handle: PolicyHandle) -> str:
         """Get base URL for RPC calls.
         
-        param: handle: Instance of PolicyHandle.
-        return: String containing the URL of the docker port
+        :param handle: Instance of PolicyHandle.
+        :return: String containing the URL of the docker port
         """
         return f"http://{handle.host}:{handle.port}"
     
     def wait_for_ready(self, handle: PolicyHandle) -> bool:
         """Wait for container to be ready to accept requests.
         
-        param: handle: Instance of PolicyHandle.
-        return: Bool if the docker is ready or not
+        :param handle: Instance of PolicyHandle.
+        :return: Bool if the docker is ready or not
         """
         base_url = self._get_base_url(handle)
         deadline = time.time() + self._startup_timeout
@@ -189,8 +189,8 @@ class PolicyBackend(ABC):
     def _encode_image(self, image: Any) -> str:
         """Encode image to base64 string.
         
-        param: image: An image instance (PIL, Numpy array).
-        return: encoded base64 string
+        :param image: An image instance (PIL, Numpy array).
+        :return: encoded base64 string
         """
         if isinstance(image, str):
             return image  # Already base64
@@ -216,12 +216,12 @@ class PolicyBackend(ABC):
               attn_implementation: str = "sdpa") -> PolicyHandle:
         """Start policy container and load model.
         
-        param: version: The specific version of the policy that is pulled.
-        param: model_path: Path to the model weights
-        param: device: Device to run the model on (cpu, cuda)
-        param: host_port: port ID of the host
-        param: attn_implementation: Attention implemention needed if necessary (flash_attention, sdpa)
-        return: Instance of policy handle with updated parameters
+        :param version: The specific version of the policy that is pulled.
+        :param model_path: Path to the model weights
+        :param device: Device to run the model on (cpu, cuda)
+        :param host_port: port ID of the host
+        :param attn_implementation: Attention implemention needed if necessary (flash_attention, sdpa)
+        :return: Instance of policy handle with updated parameters
         """
         policy_id = f"{self.name}-{version}-{uuid.uuid4().hex[:8]}"
 
@@ -313,9 +313,9 @@ class PolicyBackend(ABC):
     def _wait_for_port(self, container: Container, max_attempts: int = 10) -> Optional[int]:
         """Wait for container port mapping to be ready.
         
-        param: container: Docker container object
-        param: max_attempts: Max attempts to allow for the container to be running on the port
-        return: Port ID on which the container is running (None if it fails)
+        :param container: Docker container object
+        :param max_attempts: Max attempts to allow for the container to be running on the port
+        :return: Port ID on which the container is running (None if it fails)
         """
         for _ in range(max_attempts):
             container.reload()

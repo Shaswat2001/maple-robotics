@@ -9,8 +9,8 @@ def policy_dir(name: str, version: str) -> Path:
     Constructs the filesystem path where a particular model version is stored
     within the MAPLE models directory structure.
     
-    param: name: Name of the policy model.
-    param: version: Version identifier of the policy model.
-    return: Path object pointing to the model's version directory.
+    :param name: Name of the policy model.
+    :param version: Version identifier of the policy model.
+    :return: Path object pointing to the model's version directory.
     """
     return VLA_HOME / "models" / name / version

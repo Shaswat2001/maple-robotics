@@ -69,19 +69,19 @@ def retry(
     or by providing a RetryConfig object. If both are provided, the config
     object takes precedence.
     
-    param: max_attempts: Maximum number of execution attempts. Must be >= 1.
-    param: delay: Initial delay between retries in seconds. Must be >= 0.
-    param: backoff: Exponential backoff multiplier. Applied to delay after each
+    :param max_attempts: Maximum number of execution attempts. Must be >= 1.
+    :param delay: Initial delay between retries in seconds. Must be >= 0.
+    :param backoff: Exponential backoff multiplier. Applied to delay after each
                    failed attempt.
-    param: max_delay: Maximum delay cap in seconds. Prevents unbounded growth
+    :param max_delay: Maximum delay cap in seconds. Prevents unbounded growth
                      of retry intervals.
-    param: exceptions: Tuple of exception types to catch and retry. Only these
+    :param exceptions: Tuple of exception types to catch and retry. Only these
                       exceptions trigger retries; others propagate immediately.
                       Default is (Exception,) which catches all exceptions.
-    param: config: Optional RetryConfig object. If provided, overrides all
+    :param config: Optional RetryConfig object. If provided, overrides all
                   other parameters.
     
-    return: A decorator function that wraps the target function with retry logic.
+    :return: A decorator function that wraps the target function with retry logic.
     """
     if config:
         max_attempts = config.max_attempts
@@ -142,16 +142,16 @@ def retry_call(
     - Retrying lambda functions or other callables
     - Testing retry behavior
         
-    param: func: The callable to execute with retry logic.
-    param: args: Positional arguments to pass to func. Default is empty tuple.
-    param: kwargs: Keyword arguments to pass to func. Default is empty dict.
-    param: max_attempts: Maximum number of execution attempts. Must be >= 1.
-    param: delay: Initial delay between retries in seconds.
-    param: backoff: Exponential backoff multiplier applied after each failure.
-    param: exceptions: Tuple of exception types to catch and retry on.
+    :param func: The callable to execute with retry logic.
+    :param args: Positional arguments to pass to func. Default is empty tuple.
+    :param kwargs: Keyword arguments to pass to func. Default is empty dict.
+    :param max_attempts: Maximum number of execution attempts. Must be >= 1.
+    :param delay: Initial delay between retries in seconds.
+    :param backoff: Exponential backoff multiplier applied after each failure.
+    :param exceptions: Tuple of exception types to catch and retry on.
                       Default is (Exception,) which catches all exceptions.
     
-    return: The return value from successful function execution.
+    :return: The return value from successful function execution.
     """
     kwargs = kwargs or {}
     

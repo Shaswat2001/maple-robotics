@@ -72,7 +72,7 @@ class MonitoredContainer:
         Serializes the container's current state for status reporting
         and API responses. Excludes callable fields.
         
-        return: Dictionary containing container status information.
+        :return: Dictionary containing container status information.
         """
         return {
             "container_id": self.container_id,
@@ -112,8 +112,8 @@ class HealthMonitor:
         unhealthy callback. The monitor must be started explicitly with
         start() to begin monitoring.
         
-        param: check_interval: Seconds between health checks for all containers.
-        param: on_unhealthy: Optional callback invoked when a container becomes
+        :param check_interval: Seconds between health checks for all containers.
+        :param on_unhealthy: Optional callback invoked when a container becomes
                             unhealthy. Receives MonitoredContainer as argument.
         """
         self.check_interval = check_interval
@@ -140,15 +140,15 @@ class HealthMonitor:
         checked periodically according to check_interval once the monitor
         is started. Thread-safe and can be called while monitor is running.
         
-        param: container_id: Docker container ID to monitor.
-        param: name: Policy/Env instance name for logging and status reports.
-        param: check_fn: Callable that returns True if container is healthy,
+        :param container_id: Docker container ID to monitor.
+        :param name: Policy/Env instance name for logging and status reports.
+        :param check_fn: Callable that returns True if container is healthy,
                         False otherwise. Should not raise exceptions.
-        param: restart_fn: Optional callable to restart the container when
+        :param restart_fn: Optional callable to restart the container when
                           unhealthy. Only used if auto_restart is True.
-        param: auto_restart: If True, automatically call restart_fn when
+        :param auto_restart: If True, automatically call restart_fn when
                             container becomes unhealthy.
-        param: max_failures: Number of consecutive health check failures
+        :param max_failures: Number of consecutive health check failures
                             before marking container as unhealthy.
         """
         with self._lock:
@@ -171,7 +171,7 @@ class HealthMonitor:
         will no longer be checked. Thread-safe and can be called while
         monitor is running. Safe to call even if container is not registered.
         
-        param: container_id: Docker container ID to unregister.
+        :param container_id: Docker container ID to unregister.
         """
         with self._lock:
             if container_id in self._containers:
@@ -238,7 +238,7 @@ class HealthMonitor:
         max_failures is reached. Handles exceptions from check_fn
         gracefully.
         
-        param: container: MonitoredContainer instance to check.
+        :param container: MonitoredContainer instance to check.
         """
         try:
             healthy = container.check_fn()
@@ -275,7 +275,7 @@ class HealthMonitor:
         if configured, and attempts automatic restart if enabled. Prevents
         duplicate restart attempts while restart is in progress.
         
-        param: container: MonitoredContainer that has become unhealthy.
+        :param container: MonitoredContainer that has become unhealthy.
         """
         if container.status == HealthStatus.RESTARTING:
             return  # Already handling
@@ -302,7 +302,7 @@ class HealthMonitor:
         Resets failure counter on successful restart. Handles exceptions
         from restart_fn and marks container unhealthy if restart fails.
         
-        param: container: MonitoredContainer to restart.
+        :param container: MonitoredContainer to restart.
         """
         container.status = HealthStatus.RESTARTING
         log.info(f"Attempting to restart container {container.name}...")
@@ -324,8 +324,8 @@ class HealthMonitor:
         Returns a dictionary with the container's current health status,
         failure counts, and timing information. Thread-safe.
         
-        param: container_id: Docker container ID to query.
-        return: Dictionary containing container status, or None if container
+        :param container_id: Docker container ID to query.
+        :return: Dictionary containing container status, or None if container
                 is not registered.
         """
         with self._lock:
@@ -340,7 +340,7 @@ class HealthMonitor:
         Returns a list of status dictionaries for all registered containers.
         Useful for dashboard and monitoring endpoints. Thread-safe.
         
-        return: List of dictionaries, each containing a container's status.
+        :return: List of dictionaries, each containing a container's status.
         """
         with self._lock:
             return [c.to_dict() for c in self._containers.values()]
@@ -353,8 +353,8 @@ class HealthMonitor:
         Useful for on-demand status verification or testing. Updates
         the container's status based on the check result.
         
-        param: container_id: Docker container ID to check.
-        return: Updated HealthStatus after the check, or None if container
+        :param container_id: Docker container ID to check.
+        :return: Updated HealthStatus after the check, or None if container
                 is not registered.
         """
         with self._lock:
@@ -370,7 +370,7 @@ class HealthMonitor:
         """
         Check if the health monitor is currently running.
         
-        return: True if monitoring thread is active, False otherwise.
+        :return: True if monitoring thread is active, False otherwise.
         """
         return self._running
     
@@ -378,6 +378,6 @@ class HealthMonitor:
         """
         Get number of containers currently being monitored.
         
-        return: Count of registered containers.
+        :return: Count of registered containers.
         """
         return len(self._containers)

@@ -60,7 +60,7 @@ def _get_conn():
     Automatically commits on success and rolls back on exceptions. Always
     closes the connection when exiting the context.
     
-    return: SQLite connection object configured for MAPLE state management.
+    :return: SQLite connection object configured for MAPLE state management.
     """
     _ensure_dir()
     conn = sqlite3.connect(DB_FILE, timeout=10)
@@ -156,11 +156,11 @@ def add_policy(name: str, version: str, path: str, repo: str = None) -> int:
     the same name and version already exists, updates its path, repo, and
     pulled timestamp.
     
-    param: name: Name of the policy model.
-    param: version: Version identifier of the policy.
-    param: path: Filesystem path where the policy is stored.
-    param: repo: Optional repository URL or identifier.
-    return: Database row ID of the inserted or updated policy.
+    :param name: Name of the policy model.
+    :param version: Version identifier of the policy.
+    :param path: Filesystem path where the policy is stored.
+    :param repo: Optional repository URL or identifier.
+    :return: Database row ID of the inserted or updated policy.
     """
     with _get_conn() as conn:
         conn.execute("""
@@ -180,9 +180,9 @@ def get_policy(name: str, version: str) -> Optional[Dict]:
     
     Retrieves policy information from the database by name and version.
     
-    param: name: Name of the policy model.
-    param: version: Version identifier of the policy.
-    return: Dictionary containing policy data, or None if not found.
+    :param name: Name of the policy model.
+    :param version: Version identifier of the policy.
+    :return: Dictionary containing policy data, or None if not found.
     """
     with _get_conn() as conn:
         row = conn.execute(
@@ -198,7 +198,7 @@ def list_policies() -> List[Dict]:
     
     Returns all registered policies ordered by most recently pulled first.
     
-    return: List of dictionaries containing policy data.
+    :return: List of dictionaries containing policy data.
     """
     with _get_conn() as conn:
         rows = conn.execute("SELECT * FROM policies ORDER BY pulled_at DESC").fetchall()
@@ -212,9 +212,9 @@ def remove_policy(name: str, version: str) -> bool:
     Deletes a policy record from the database. Does not delete the actual
     model files from disk.
     
-    param: name: Name of the policy model.
-    param: version: Version identifier of the policy.
-    return: True if a policy was deleted, False if not found.
+    :param name: Name of the policy model.
+    :param version: Version identifier of the policy.
+    :return: True if a policy was deleted, False if not found.
     """
     with _get_conn() as conn:
         cursor = conn.execute(
@@ -231,9 +231,9 @@ def add_env(name: str, image: str) -> int:
     Registers a downloaded environment in the database. If an environment
     with the same name already exists, updates its image and pulled timestamp.
     
-    param: name: Name of the environment.
-    param: image: Docker image identifier.
-    return: Database row ID of the inserted or updated environment.
+    :param name: Name of the environment.
+    :param image: Docker image identifier.
+    :return: Database row ID of the inserted or updated environment.
     """
     with _get_conn() as conn:
         conn.execute("""
@@ -252,8 +252,8 @@ def get_env(name: str) -> Optional[dict]:
     
     Retrieves environment information from the database by name.
     
-    param: name: Name of the environment.
-    return: Dictionary containing environment data, or None if not found.
+    :param name: Name of the environment.
+    :return: Dictionary containing environment data, or None if not found.
     """
     with _get_conn() as conn:
         row = conn.execute("SELECT * FROM envs WHERE name = ?", (name,)).fetchone()
@@ -266,7 +266,7 @@ def list_envs() -> List[dict]:
     
     Returns all registered environments ordered by most recently pulled first.
     
-    return: List of dictionaries containing environment data.
+    :return: List of dictionaries containing environment data.
     """
     with _get_conn() as conn:
         rows = conn.execute("SELECT * FROM envs ORDER BY pulled_at DESC").fetchall()
@@ -289,16 +289,16 @@ def add_container(
     Adds a container to the tracking database. If a container with the same
     ID already exists, replaces it with the new information.
     
-    param: container_id: Unique container identifier.
-    param: type: Container type ('policy' or 'env').
-    param: name: Human-readable container name.
-    param: backend: Container backend being used.
-    param: host: Host address where container is running.
-    param: port: Port number for container communication.
-    param: status: Current container status.
-    param: metadata: Optional dictionary of additional container metadata.
+    :param container_id: Unique container identifier.
+    :param type: Container type ('policy' or 'env').
+    :param name: Human-readable container name.
+    :param backend: Container backend being used.
+    :param host: Host address where container is running.
+    :param port: Port number for container communication.
+    :param status: Current container status.
+    :param metadata: Optional dictionary of additional container metadata.
     
-    return: The container ID that was registered.
+    :return: The container ID that was registered.
     """
     with _get_conn() as conn:
         conn.execute("""
@@ -318,8 +318,8 @@ def update_container_status(container_id: str, status: str):
     
     Changes the status field for a tracked container.
     
-    param: container_id: Unique container identifier.
-    param: status: New status value to set.
+    :param container_id: Unique container identifier.
+    :param status: New status value to set.
     """
     with _get_conn() as conn:
         conn.execute(
@@ -335,9 +335,9 @@ def remove_container(container_id: str) -> bool:
     Deletes a container record from the database. Does not stop or remove
     the actual container.
     
-    param: container_id: Unique container identifier.
+    :param container_id: Unique container identifier.
     
-    return: True if a container was removed, False if not found.
+    :return: True if a container was removed, False if not found.
     """
     with _get_conn() as conn:
         cursor = conn.execute("DELETE FROM containers WHERE id = ?", (container_id,))
@@ -351,9 +351,9 @@ def get_container(container_id: str) -> Optional[dict]:
     Retrieves container information from the database. Deserializes the
     metadata JSON field into a dictionary.
     
-    param: container_id: Unique container identifier.
+    :param container_id: Unique container identifier.
     
-    return: Dictionary containing container data with parsed metadata, or None if not found.
+    :return: Dictionary containing container data with parsed metadata, or None if not found.
     """
     with _get_conn() as conn:
         row = conn.execute("SELECT * FROM containers WHERE id = ?", (container_id,)).fetchone()
@@ -371,9 +371,9 @@ def get_container_by_name(name: str) -> Optional[dict]:
     Retrieves container information from the database by container name.
     Deserializes the metadata JSON field into a dictionary.
     
-    param: name: Container name to search for.
+    :param name: Container name to search for.
     
-    return: Dictionary containing container data with parsed metadata, or None if not found.
+    :return: Dictionary containing container data with parsed metadata, or None if not found.
     """
     with _get_conn() as conn:
         row = conn.execute("SELECT * FROM containers WHERE name = ?", (name,)).fetchone()
@@ -392,10 +392,10 @@ def list_containers(type: str = None, status: str = None) -> List[dict]:
     Results are ordered by most recently started first. Deserializes metadata
     for all returned containers.
     
-    param: type: Optional filter for container type ('policy' or 'env').
-    param: status: Optional filter for container status.
+    :param type: Optional filter for container type ('policy' or 'env').
+    :param status: Optional filter for container status.
     
-    return: List of dictionaries containing container data with parsed metadata.
+    :return: List of dictionaries containing container data with parsed metadata.
     """
     query = "SELECT * FROM containers WHERE 1=1"
     params = []
@@ -444,14 +444,14 @@ def add_run(
     Creates a new evaluation run record in the database with initial metadata.
     The run starts in an incomplete state until finish_run() is called.
     
-    param: run_id: Unique identifier for this run.
-    param: policy_id: Identifier of the policy being evaluated.
-    param: env_id: Identifier of the environment being used.
-    param: task: Task name or identifier.
-    param: instruction: Optional natural language instruction for the task.
-    param: metadata: Optional dictionary of additional run metadata.
+    :param run_id: Unique identifier for this run.
+    :param policy_id: Identifier of the policy being evaluated.
+    :param env_id: Identifier of the environment being used.
+    :param task: Task name or identifier.
+    :param instruction: Optional natural language instruction for the task.
+    :param metadata: Optional dictionary of additional run metadata.
     
-    return: The run ID that was registered.
+    :return: The run ID that was registered.
     """
     with _get_conn() as conn:
         conn.execute("""
@@ -474,13 +474,13 @@ def finish_run(run_id: str,
     
     Updates a run record with final metrics and outcome information.
     
-    param: run_id: Unique identifier of the run to update.
-    param: steps: Number of steps taken during the run.
-    param: total_reward: Cumulative reward achieved.
-    param: success: Whether the run was successful.
-    param: terminated: Whether the episode terminated naturally.
-    param: truncated: Whether the episode was truncated (e.g., timeout).
-    param: video_path: Optional path to recorded video of the run.
+    :param run_id: Unique identifier of the run to update.
+    :param steps: Number of steps taken during the run.
+    :param total_reward: Cumulative reward achieved.
+    :param success: Whether the run was successful.
+    :param terminated: Whether the episode terminated naturally.
+    :param truncated: Whether the episode was truncated (e.g., timeout).
+    :param video_path: Optional path to recorded video of the run.
     """
     with _get_conn() as conn:
         conn.execute("""
@@ -503,8 +503,8 @@ def get_run(run_id: str) -> Optional[Dict]:
     Retrieves run information from the database. Deserializes the metadata
     JSON field and converts integer boolean fields back to Python booleans.
     
-    param: run_id: Unique identifier of the run.
-    return: Dictionary containing run data with parsed metadata and boolean fields, or None if not found.
+    :param run_id: Unique identifier of the run.
+    :return: Dictionary containing run data with parsed metadata and boolean fields, or None if not found.
     """
     with _get_conn() as conn:
         row = conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
@@ -526,10 +526,10 @@ def list_runs(policy_id: str = None, task: str = None, limit: int = 100) -> List
     Results are ordered by most recent first and limited to the specified count.
     Deserializes metadata for all returned runs.
     
-    param: policy_id: Optional filter for runs using a specific policy.
-    param: task: Optional filter for runs of a specific task (partial match).
-    param: limit: Maximum number of runs to return.
-    return: List of dictionaries containing run data with parsed metadata.
+    :param policy_id: Optional filter for runs using a specific policy.
+    :param task: Optional filter for runs of a specific task (partial match).
+    :param limit: Maximum number of runs to return.
+    :return: List of dictionaries containing run data with parsed metadata.
     """
     query = "SELECT * FROM runs WHERE 1=1"
     params = []
@@ -563,9 +563,9 @@ def get_run_stats(policy_id: str = None, task: str = None) -> Dict:
     by policy ID and/or task name. Includes success rates, reward statistics,
     and step counts.
     
-    param: policy_id: Optional filter for runs using a specific policy.
-    param: task: Optional filter for runs of a specific task (partial match).
-    return: Dictionary containing aggregate statistics including total runs,
+    :param policy_id: Optional filter for runs using a specific policy.
+    :param task: Optional filter for runs of a specific task (partial match).
+    :return: Dictionary containing aggregate statistics including total runs,
            successful runs, success rate, and reward/step averages and extrema.
     """
     query = """
@@ -608,7 +608,7 @@ def load_state() -> Dict:
     Returns the current state in the old JSON format for compatibility with
     code that expects the previous state management structure.
     
-    return: Dictionary containing lists of policies, environments, and containers.
+    :return: Dictionary containing lists of policies, environments, and containers.
     """
     init_db()
     return {

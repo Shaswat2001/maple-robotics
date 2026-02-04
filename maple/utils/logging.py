@@ -49,13 +49,13 @@ def setup_logging(level: str = "INFO",
     Verbose mode adds source location information (module:line) to each
     log message, useful for debugging but cluttering for normal operation.
     
-    param: level: Logging level as string. Valid values: "DEBUG", "INFO",
+    :param level: Logging level as string. Valid values: "DEBUG", "INFO",
                  "WARNING", "ERROR", "CRITICAL". Case-insensitive.
                  Defaults to "INFO".
-    param: log_file: Optional path to write logs to a file. The parent
+    :param log_file: Optional path to write logs to a file. The parent
                     directory will be created if it doesn't exist.
                     If None, only console logging is enabled.
-    param: verbose: If True, includes source module and line number in
+    :param verbose: If True, includes source module and line number in
                    log messages. If False, uses simpler format with just
                    timestamp, level, and message. Defaults to False.
     """
@@ -106,9 +106,9 @@ def get_logger(name: str) -> logging.Logger:
     The returned logger inherits configuration from the root logger
     set up by setup_logging(), including log level, format, and handlers.
     
-    param: name: Component name for the logger, typically the module
+    :param name: Component name for the logger, typically the module
                 name or functional area (e.g., "policy.base", "cleanup",
                 "health"). The "maple." prefix is automatically added.
-    return: Configured logging.Logger instance with "maple." namespace.
+    :return: Configured logging.Logger instance with "maple." namespace.
     """
     return logging.getLogger(f"maple.{name}")

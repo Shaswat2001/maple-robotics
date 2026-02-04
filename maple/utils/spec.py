@@ -8,8 +8,8 @@ def parse_versioned(spec: str) -> tuple[str, str]:
     If no version is specified, defaults to 'latest'. Used for parsing
     model specifications, package versions, or other versioned identifiers.
 
-    param: spec: Versioned specification string in format 'name:version' or 'name'.
-    return: Tuple of (name, version) where version is 'latest' if not specified.
+    :param spec: Versioned specification string in format 'name:version' or 'name'.
+    :return: Tuple of (name, version) where version is 'latest' if not specified.
     """
     spec = spec.strip()
     if ":" in spec:
