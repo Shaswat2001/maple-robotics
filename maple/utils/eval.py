@@ -16,30 +16,20 @@ Key features:
 
 The evaluation system communicates with the MAPLE daemon to execute episodes
 and aggregates results into structured formats for analysis and reporting.
-
-Classes:
-- EvalResult: Single episode result container
-- BatchResults: Aggregated results with statistics
-- BatchEvaluator: Main evaluation orchestrator
-
-Output formats:
-- JSON: Complete structured data with all episode details
-- Markdown: Human-readable summary tables
-- CSV: Tabular data for spreadsheet analysis
 """
 
 import json
 import time
 import uuid
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable
-from dataclasses import dataclass, field, asdict
 from datetime import datetime
+from dataclasses import dataclass, field, asdict
+from typing import List, Dict, Any, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from maple.utils.logging import get_logger
 from maple.state import store
 from maple.utils.config import config
+from maple.utils.logging import get_logger
 
 log = get_logger("eval")
 
@@ -332,7 +322,6 @@ class BatchEvaluator:
         
         :return: JSON response from daemon.
         
-        :raises RuntimeError: If daemon returns non-200 status.
         """
         import requests
         

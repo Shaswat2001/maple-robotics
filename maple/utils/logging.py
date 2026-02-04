@@ -18,8 +18,8 @@ even if setup_logging() is called multiple times. All MAPLE loggers use
 the "maple." namespace prefix for easy filtering.
 """
 
-import logging
 import sys
+import logging
 from pathlib import Path
 from typing import Optional
 

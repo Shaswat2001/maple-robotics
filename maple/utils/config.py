@@ -48,8 +48,11 @@ class LoggingConfig:
     """
     Logging configuration section.
     """
+    # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
     level: str = "INFO"
+    # Optional path to log file (None = stderr only)
     file: Optional[str] = None
+    # Enable verbose output with additional debug info
     verbose: bool = False
 
 @dataclass
@@ -57,58 +60,71 @@ class ContainerConfig:
     """
     Docker container configuration section.
     """
+    # Memory limit for containers (e.g., '32g', '16g')
     memory_limit: str = "32g"
+    # Shared memory size for PyTorch dataloaders (important for multiprocessing)
     shm_size: str = "2g"
+    # Maximum seconds to wait for container startup
     startup_timeout: int = 300
+    # Seconds between container health check polls
     health_check_interval: int = 30
-
 
 @dataclass
 class PolicyConfig:
     """
     Policy backend configuration section.
     """
+    # Default device for policy models ('cpu', 'cuda:0', etc.)
     default_device: str = "cpu"
-    attn_implementation: str = "sdpa"  # sdpa, flash_attention_2, eager
-
+    # Default attention mechanism: sdpa, flash_attention_2, eager
+    attn_implementation: str = "sdpa"
 
 @dataclass
 class EnvConfig:
     """
     Environment backend configuration section.
     """
+    # Default number of environment instances to create when serving
     default_num_envs: int = 1
-
 
 @dataclass
 class DaemonConfig:
     """
     Daemon server configuration section.
     """
+    # Host address to bind the daemon server to (0.0.0.0 = all interfaces)
     host: str = "0.0.0.0"
+    # Port number for the daemon HTTP API
     port: int = 8000
-
 
 @dataclass  
 class RunConfig:
     """
     Single episode run configuration section.
     """
+    # Maximum steps per episode before truncation
     max_steps: int = 300
+    # Timeout multiplier for HTTP requests (actual timeout = max_steps * multiplier)
     timeout: int = 200
+    # Whether to record and save episode videos by default
     save_video: bool = False
+    # Directory for saving episode videos
     video_dir: str = "~/.maple/videos"
-
 
 @dataclass  
 class EvalConfig:
     """
     Batch evaluation configuration section.
     """
+    # Maximum steps per episode before truncation
     max_steps: int = 300
+    # Timeout multiplier for HTTP requests
     timeout: int = 200
+    # Whether to record and save evaluation videos by default
     save_video: bool = False
+    # Directory for saving evaluation videos
     video_dir: str = "~/.maple/videos"
+    # Directory for saving evaluation results and metrics
     results_dir: str = "~/.maple/results"
 
 
@@ -122,6 +138,7 @@ class Config:
     functions to ensure each section has independent default instances.
     """
 
+    # Configuration sections (use factories to create independent instances)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     containers: ContainerConfig = field(default_factory=ContainerConfig)
     policy: PolicyConfig = field(default_factory=PolicyConfig)
@@ -155,6 +172,7 @@ class Config:
         
         :return: Nested dictionary representation of all configuration sections.
         """
+        # asdict recursively converts dataclasses to dictionaries
         return asdict(self)
     
     def save(self, path: Path = None) -> None:
@@ -178,8 +196,8 @@ class Config:
             yaml.dump(
                 self.to_dict(),
                 f,
-                default_flow_style=False,  # Use block style (multi-line)
-                sort_keys=False  # Preserve field order
+                default_flow_style=False,  # Use block style (multi-line) instead of inline
+                sort_keys=False  # Preserve field order from dataclass definition
             )
         
         log.info(f"Config saved to {path}")
@@ -203,9 +221,10 @@ def _deep_update(base: Dict, updates: Dict) -> Dict:
     for key, value in updates.items():
         # Recursively merge nested dictionaries
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            # Both are dicts - recurse to merge
             _deep_update(base[key], value)
         else:
-            # Direct assignment for non-dict values
+            # Direct assignment for non-dict values or new keys
             base[key] = value
     return base
 
@@ -221,6 +240,7 @@ def _apply_env_vars(cfg: Config) -> None:
     :param cfg: Configuration instance to update.
     """
     # Map environment variables to (section, key) tuples
+    # This defines which env vars map to which config fields
     env_mappings = {
         "MAPLE_DEVICE": ("policy", "default_device"),
         "MAPLE_ATTN": ("policy", "attn_implementation"),
@@ -233,24 +253,26 @@ def _apply_env_vars(cfg: Config) -> None:
         "MAPLE_SAVE_VIDEO": ("eval", "save_video"),
     }
     
+    # Process each potential environment variable
     for env_var, (section, key) in env_mappings.items():
         value = os.environ.get(env_var)
         if value is not None:
-            # Get the configuration section object
+            # Get the configuration section object (e.g., cfg.policy)
             section_obj = getattr(cfg, section)
             
-            # Get current value to determine type
+            # Get current value to determine expected type
             current = getattr(section_obj, key)
             
             # Type conversion based on current value type
             if isinstance(current, bool):
-                # Parse boolean from string
+                # Parse boolean from string (case-insensitive)
                 value = value.lower() in ("true", "1", "yes")
             elif isinstance(current, int):
                 # Parse integer from string
                 value = int(value)
+            # Strings are used as-is, no conversion needed
             
-            # Apply the override
+            # Apply the override to the config object
             setattr(section_obj, key, value)
             log.debug(f"Config override from {env_var}: {section}.{key} = {value}")
 
@@ -269,6 +291,7 @@ def _load_from_dict(cfg: Config, data: Dict) -> None:
     # Update logging section
     if "logging" in data:
         for k, v in data["logging"].items():
+            # Only set if the attribute exists (ignore unknown keys)
             if hasattr(cfg.logging, k):
                 setattr(cfg.logging, k, v)
     
@@ -326,18 +349,21 @@ def load_config(config_path: Path = None) -> Config:
     """
     global config
     
-    # Reset to default values
+    # Reset to default values (fresh start)
     config = Config()
     
-    # Load from YAML file
+    # Load from YAML file (if it exists)
     path = config_path or CONFIG_FILE
     if path.exists():
         try:
+            # Load YAML file
             with open(path) as f:
                 data = yaml.safe_load(f) or {}
+            # Apply values from file to config object
             _load_from_dict(config, data)
             log.debug(f"Loaded config from {path}")
         except Exception as e:
+            # Log warning but continue with defaults + env vars
             log.warning(f"Failed to load config from {path}: {e}")
     
     # Apply environment variable overrides (highest precedence)
@@ -353,7 +379,9 @@ def init_config_file():
     location (~/.maple/config.yaml). Safe to call multiple times as
     it only creates the file if missing.
     """
+    # Only create if file doesn't already exist
     if not CONFIG_FILE.exists():
+        # Save current config (with defaults) to file
         config.save(CONFIG_FILE)
         log.info(f"Created default config at {CONFIG_FILE}")
 

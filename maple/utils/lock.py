@@ -155,7 +155,6 @@ class DaemonLock:
         acquisition fails (another daemon is running).
         
         :return: Self for use in 'with' statement.
-        :raises RuntimeError: If lock cannot be acquired.
         """
         if not self.acquire():
             raise RuntimeError("Could not acquire daemon lock - is another daemon running?")

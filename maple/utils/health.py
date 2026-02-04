@@ -210,7 +210,7 @@ class HealthMonitor:
             self._thread = None
         log.info("Health monitor stopped")
     
-    def _monitor_loop(self):
+    def _monitor_loop(self) -> None:
         """
         Main monitoring loop running in background thread.
         

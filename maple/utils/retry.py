@@ -20,8 +20,8 @@ reasonable retry intervals for transient failures.
 """
 
 import time
-from dataclasses import dataclass
 from functools import wraps 
+from dataclasses import dataclass
 from typing import Callable, Optional, Tuple, Type, TypeVar
 
 from maple.utils.logging import get_logger
