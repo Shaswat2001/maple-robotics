@@ -1,6 +1,12 @@
-from maple.backend.policy.openvla import OpenVLAPolicy
-from maple.backend.policy.smolvla import SmolVLAPolicy
-from maple.backend.envs.libero import LiberoEnvBackend
+"""
+Policy and Environment Backend Registry
+
+POLICY_BACKENDS: Simple dict mapping "policy" → Policy backend class.
+ENV_BACKENDS: Simple dict mapping "env" → Environment backend class.
+"""
+
+from .policy import OpenVLAPolicy, SmolVLAPolicy
+from .envs import LiberoEnvBackend
 
 ENV_BACKENDS = {
     "libero": LiberoEnvBackend

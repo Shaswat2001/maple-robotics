@@ -1,3 +1,10 @@
+"""
+Adapter Registry
+
+Simple dict mapping "policy:env" → Adapter class.
+To add a new adapter, call the register function with Adapter class and policy:env string.
+"""
+
 from typing import Dict, Type
 from maple.adapters.custom import OpenVLALiberoAdapter, SmolVLALiberoAdapter
 from maple.adapters.base import Adapter

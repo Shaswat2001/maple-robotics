@@ -1,3 +1,12 @@
+"""
+Base class for policy backends.
+
+Policy backends handle:
+- Pulling model weights
+- Running policy containers
+- Communicating with running policies (RPC)
+"""
+
 import io
 import uuid
 import time
@@ -21,7 +30,12 @@ from maple.utils.cleanup import register_container, unregister_container
 log = get_logger("policy.base")
 
 def _get_config_value(attr: str, default: Any) -> Any:
-    """Get config value, falling back to default if config not loaded."""
+    """Get config value, falling back to default if config not loaded.
+    
+    :param attr: Attribute name to look for in the config.
+    :param default: Default value for that parameter if any.
+    :return: Correct value for the attribute.
+    """
     try:
         if attr == "memory_limit":
             return maple_config.containers.memory_limit
@@ -37,6 +51,7 @@ def _get_config_value(attr: str, default: Any) -> Any:
 
 @dataclass
 class PolicyHandle:
+    """Handle to a running policy instance."""
 
     policy_id: str
     backend_name: str
@@ -66,6 +81,28 @@ class PolicyHandle:
         return cls(**d)
     
 class PolicyBackend(ABC):
+    """
+    Base class for Docker-based policy backends.
+    
+    Provides common functionality for:
+    - Pulling Docker images
+    - Starting/stopping containers with GPU support
+    - Health checks and model loading
+    - HTTP RPC communication (act, act_batch)
+    - Image encoding
+    
+    Subclasses must define:
+    - name: str
+    - _image: str
+    - _hf_repos: Dict[str, str]  # version -> HuggingFace repo
+    
+    Subclasses can override:
+    - _get_container_config(): For custom env vars, volumes, etc.
+    - info(): For backend-specific info
+    
+    Container settings are read from config file (~/.vla/config.yaml)
+    with fallback to class defaults.
+    """
     name: str
     _image: str
     _hf_repos: Dict[str, str]  # version -> HuggingFace repo ID
@@ -86,11 +123,23 @@ class PolicyBackend(ABC):
         self._health_check_interval = _get_config_value("health_check_interval", self._health_check_interval)
 
     @abstractmethod
-    def info(self) -> dict:
+    def info(self) -> Dict:
+        """Get the info of specifc policy.
+        
+        :return: A dictionary containing the policy information.
+        """
         pass
     
     @abstractmethod
-    def act(self, handle: PolicyHandle, image: Any, instruction: str, unnorm_key: Optional[str] = None) -> List[float]:
+    def act(self, handle: PolicyHandle, payload: Any, instruction: str, unnorm_key: Optional[str] = None) -> List[float]:
+        """Abstract method to get action from the policy given the inputs.
+        
+        :param handle: Instance of PolicyHandle.
+        :param payload: Tranformed observation from the env (after passing through the adapter).
+        :param instruction: Instruction on the task to execute.
+        :param unnorm_key: Unnorm key if needed by the policy to normalize the data (Optional)
+        :return: Actions predicted by the policy
+        """
         pass
 
     # @abstractmethod
@@ -102,10 +151,19 @@ class PolicyBackend(ABC):
     #     pass
 
     def _get_base_url(self, handle: PolicyHandle) -> str:
-        """Get base URL for RPC calls."""
+        """Get base URL for RPC calls.
+        
+        param: handle: Instance of PolicyHandle.
+        return: String containing the URL of the docker port
+        """
         return f"http://{handle.host}:{handle.port}"
     
     def wait_for_ready(self, handle: PolicyHandle) -> bool:
+        """Wait for container to be ready to accept requests.
+        
+        param: handle: Instance of PolicyHandle.
+        return: Bool if the docker is ready or not
+        """
         base_url = self._get_base_url(handle)
         deadline = time.time() + self._startup_timeout
 
@@ -128,9 +186,13 @@ class PolicyBackend(ABC):
         return False
     
     def _encode_image(self, image: Any) -> str:
-
+        """Encode image to base64 string.
+        
+        param: image: An image instance (PIL, Numpy array).
+        return: encoded base64 string
+        """
         if isinstance(image, str):
-            return image
+            return image  # Already base64
         
         if isinstance(image, np.ndarray):
             if image.dtype != np.uint8:
@@ -151,7 +213,15 @@ class PolicyBackend(ABC):
               device: str,
               host_port: Optional[int] = None,
               attn_implementation: str = "sdpa") -> PolicyHandle:
+        """Start policy container and load model.
         
+        param: version: The specific version of the policy that is pulled.
+        param: model_path: Path to the model weights
+        param: device: Device to run the model on (cpu, cuda)
+        param: host_port: port ID of the host
+        param: attn_implementation: Attention implemention needed if necessary (flash_attention, sdpa)
+        return: Instance of policy handle with updated parameters
+        """
         policy_id = f"{self.name}-{version}-{uuid.uuid4().hex[:8]}"
 
         log.info(f"Starting policy container: {policy_id}")
