@@ -176,7 +176,7 @@ class VLADaemon:
         self.app = FastAPI(title="MAPLE Daemon")
 
         @self.app.get("/status")
-        def status() -> Dict[Any]:
+        def status() -> Dict[str, Any]:
             """
             Get daemon status and container information.
             
@@ -204,7 +204,7 @@ class VLADaemon:
             }
         
         @self.app.post("/run")
-        def run(req: RunRequest) -> Dict[Any]:
+        def run(req: RunRequest) -> Dict[str, Any]:
             """
             Run a policy on an environment task.
             
@@ -362,7 +362,7 @@ class VLADaemon:
                 )
 
         @self.app.get("/policy/list")
-        def policies() -> Dict[Any]:
+        def policies() -> Dict[str, Any]:
             """
             List all pulled policies.
             
@@ -371,7 +371,7 @@ class VLADaemon:
             return {"policies": store.list_policies()}
 
         @self.app.get("/env/list")
-        def envs() -> Dict[Any]:
+        def envs() -> Dict[str, Any]:
             """
             List all pulled environments.
             
@@ -380,7 +380,7 @@ class VLADaemon:
             return {"envs": store.list_envs()}
         
         @self.app.post("/policy/pull")
-        def pull_policy(req: PullPolicyRequest) -> Dict[Any]: 
+        def pull_policy(req: PullPolicyRequest) -> Dict[str, Any]: 
             """
             Pull (download) a policy model.
             
@@ -420,7 +420,7 @@ class VLADaemon:
             return {"pulled": f"{name}:{version}", "manifest": manifest}
 
         @self.app.post("/env/pull")
-        def pull_env(name: str) -> Dict[Any]:
+        def pull_env(name: str) -> Dict[str, Any]:
             """
             Pull (download) an environment image.
             
@@ -455,7 +455,7 @@ class VLADaemon:
             return {"env": name, "meta": meta}
         
         @self.app.post("/policy/serve")
-        def serve_policy(req: ServePolicyRequest) -> Dict[Any]:
+        def serve_policy(req: ServePolicyRequest) -> Dict[str, Any]:
             """
             Serve a policy model in a container.
             
@@ -529,7 +529,7 @@ class VLADaemon:
             }
         
         @self.app.post("/policy/act")
-        def policy_act(req: ActRequest) -> Dict[Any]:
+        def policy_act(req: ActRequest) -> Dict[str, Any]:
             """
             Get action from policy for a single observation.
             
@@ -561,7 +561,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/policy/info/{policy_id}")
-        def get_policy_info(policy_id: str) -> Dict[Any]:
+        def get_policy_info(policy_id: str) -> Dict[str, Any]:
             """
             Get information about a policy container.
             
@@ -589,7 +589,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
             
         @self.app.post("/policy/stop/{policy_id}")
-        def stop_policy(policy_id: str) -> Dict[Any]:
+        def stop_policy(policy_id: str) -> Dict[str, Any]:
             """
             Stop a policy container.
             
@@ -628,7 +628,7 @@ class VLADaemon:
             return {"stopped": policy_id}
 
         @self.app.post("/env/serve")
-        def serve_env(req: ServeEnvRequest) -> Dict[Any]:
+        def serve_env(req: ServeEnvRequest) -> Dict[str, Any]:
             """
             Serve one or more environment containers.
             
@@ -700,7 +700,7 @@ class VLADaemon:
             }
         
         @self.app.post("/env/setup")
-        def setup_env(req: SetupEnvRequest) -> Dict[Any]:
+        def setup_env(req: SetupEnvRequest) -> Dict[str, Any]:
             """
             Setup an environment with a specific task.
             
@@ -729,7 +729,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.post("/env/reset")
-        def reset_env(req: ResetEnvRequest) -> Dict[Any]:
+        def reset_env(req: ResetEnvRequest) -> Dict[str, Any]:
             """
             Reset an environment to initial state.
             
@@ -757,7 +757,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.post("/env/step")
-        def step_env(req: StepEnvRequest) -> Dict[Any]:
+        def step_env(req: StepEnvRequest) -> Dict[str, Any]:
             """
             Step the environment with an action.
             
@@ -786,7 +786,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.get("/env/info/{env_id}")
-        def get_env_info(env_id: str) -> Dict[Any]:
+        def get_env_info(env_id: str) -> Dict[str, Any]:
             """
             Get information about an environment container.
             
@@ -815,7 +815,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.get("/env/tasks/{backend_name}")
-        def list_env_tasks(backend_name: str, suite: Optional[str] = None) -> Dict[Any]:
+        def list_env_tasks(backend_name: str, suite: Optional[str] = None) -> Dict[str, Any]:
             """
             List available tasks for an environment backend.
             
@@ -846,7 +846,7 @@ class VLADaemon:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.post("/env/stop/{env_id}")
-        def stop_single_env(env_id: str) -> Dict[Any]:
+        def stop_single_env(env_id: str) -> Dict[str, Any]:
             """
             Stop a single environment container.
             
@@ -885,7 +885,7 @@ class VLADaemon:
             return {"stopped": env_id}
         
         @self.app.post("/env/stop")
-        def stop_env() -> Dict[Any]:
+        def stop_env() -> Dict[str, Any]:
             """
             Stop all environment containers.
             
@@ -919,7 +919,7 @@ class VLADaemon:
             return {"stopped": True}
         
         @self.app.post("/stop")
-        def stop() -> Dict[Any]:
+        def stop() -> Dict[str, Any]:
             """
             Stop the daemon.
             
@@ -983,7 +983,7 @@ class VLADaemon:
             log_level="error",
         )
 
-    def get_image(self, payload: Dict[Any]) -> np.ndarray:
+    def get_image(self, payload: Dict[str, Any]) -> np.ndarray:
         """
         Extract and concatenate images from payload for video recording.
         

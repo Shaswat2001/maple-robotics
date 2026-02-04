@@ -71,16 +71,12 @@ def retry(
     
     :param max_attempts: Maximum number of execution attempts. Must be >= 1.
     :param delay: Initial delay between retries in seconds. Must be >= 0.
-    :param backoff: Exponential backoff multiplier. Applied to delay after each
-                   failed attempt.
-    :param max_delay: Maximum delay cap in seconds. Prevents unbounded growth
-                     of retry intervals.
+    :param backoff: Exponential backoff multiplier. Applied to delay after each failed attempt.
+    :param max_delay: Maximum delay cap in seconds. Prevents unbounded growth of retry intervals.
     :param exceptions: Tuple of exception types to catch and retry. Only these
                       exceptions trigger retries; others propagate immediately.
                       Default is (Exception,) which catches all exceptions.
-    :param config: Optional RetryConfig object. If provided, overrides all
-                  other parameters.
-    
+    :param config: Optional RetryConfig object. If provided, overrides all other parameters.
     :return: A decorator function that wraps the target function with retry logic.
     """
     if config:
@@ -119,7 +115,6 @@ def retry(
         return wrapper
     return decorator
 
-
 def retry_call(
     func: Callable[..., T],
     args: tuple = (),
@@ -150,7 +145,6 @@ def retry_call(
     :param backoff: Exponential backoff multiplier applied after each failure.
     :param exceptions: Tuple of exception types to catch and retry on.
                       Default is (Exception,) which catches all exceptions.
-    
     :return: The return value from successful function execution.
     """
     kwargs = kwargs or {}

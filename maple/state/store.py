@@ -23,9 +23,9 @@ All database operations use proper transaction handling and support
 concurrent access through SQLite's WAL (Write-Ahead Logging) mode.
 """
 
-import sqlite3
 import json
 import time
+import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
 from typing import List, Optional, Dict
@@ -37,8 +37,7 @@ log = get_logger("state")
 STATE_DIR = Path.home() / ".maple"
 DB_FILE = STATE_DIR / "state.db"
 
-
-def _ensure_dir():
+def _ensure_dir() -> None:
     """
     Ensure the state directory exists.
     
@@ -46,7 +45,6 @@ def _ensure_dir():
     doesn't already exist. Safe to call multiple times.
     """
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-
 
 @contextmanager
 def _get_conn():
@@ -75,7 +73,6 @@ def _get_conn():
         raise
     finally:
         conn.close()
-
 
 def init_db() -> None:
     """

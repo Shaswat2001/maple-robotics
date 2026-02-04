@@ -13,7 +13,7 @@ Key utilities:
 import typer 
 from typing import Tuple
 
-def daemon_url(port: int) -> str:
+def daemon_url(port: int):
     """
     Construct the daemon API base URL.
     
@@ -22,10 +22,10 @@ def daemon_url(port: int) -> str:
     localhost (0.0.0.0).
     
     :param port: Port number where the daemon is listening.
-    
     :return: Full base URL for daemon API requests.
     """
     return f"http://0.0.0.0:{port}"
+
 
 def parse_policy_env(spec: str) -> Tuple[str, str]:
     """
@@ -36,16 +36,21 @@ def parse_policy_env(spec: str) -> Tuple[str, str]:
     format is used for convenience in CLI commands that need both a
     policy and environment.
     
-    Example:
-        'openvla@libero' -> ('openvla', 'libero')
-    
     :param spec: Specification string in format 'policy@env'.
-    
     :return: Tuple of (policy_name, env_name) extracted from the spec.
-    
-    :raises typer.BadParameter: If the spec doesn't contain '@' separator
-                                or if either component is empty.
     """
     # Check for required '@' separator
     if "@" not in spec:
-        raise typer.BadParameter("Expected POLICY@ENV
+        raise typer.BadParameter("Expected POLICY@ENV (example: openvla@libero)")
+    
+    # Split on first '@' only (in case names contain '@')
+    policy, env = spec.split("@", 1)
+    
+    # Strip whitespace from both components
+    policy, env = policy.strip(), env.strip()
+    
+    # Validate that both components are non-empty
+    if not policy or not env:
+        raise typer.BadParameter("Invalid POLICY@ENV")
+    
+    return policy, env

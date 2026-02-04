@@ -91,7 +91,6 @@ class OpenVLAPolicy(PolicyBackend):
         :param instruction: Natural language instruction for the task.
         :param unnorm_key: Dataset key for action unnormalization (REQUIRED).
                           Examples: 'libero_spatial', 'bridge', 'fractal'.
-        
         :return: Predicted action as list of floats, unnormalized to target space.
         """
         # Get base URL for container communication

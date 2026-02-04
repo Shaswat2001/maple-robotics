@@ -25,7 +25,6 @@ from typing import Optional
 
 _CONFIGURED = False
 
-
 def setup_logging(level: str = "INFO",
                   log_file: Optional[Path] = None,
                   verbose: bool = False

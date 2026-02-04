@@ -30,7 +30,6 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 from docker.errors import NotFound, APIError
-from docker.client.containers import Container
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
@@ -115,7 +114,6 @@ class PolicyHandle:
         :return: PolicyHandle instance reconstructed from dictionary.
         """
         return cls(**d)
-
 
 class PolicyBackend(ABC):
     """
@@ -400,7 +398,7 @@ class PolicyBackend(ABC):
             
             raise RuntimeError(f"Failed to serve policy: {e}")
 
-    def _wait_for_port(self, container: Container, max_attempts: int = 10) -> Optional[int]:
+    def _wait_for_port(self, container, max_attempts: int = 10) -> Optional[int]:
         """
         Wait for container port mapping to be available.
         

@@ -30,7 +30,6 @@ log = get_logger("lock")
 _SOCKET_DIR = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp"))
 _SOCKET_PATH = _SOCKET_DIR / "vla-daemon.sock"
 
-
 class DaemonLock:
     """
     Unix socket-based lock for ensuring single daemon instance.
@@ -174,7 +173,6 @@ class DaemonLock:
         """
         self.release()
 
-
 def is_daemon_running(socket_path: Path = None) -> bool:
     """
     Check if the MAPLE daemon is currently running.
@@ -203,7 +201,6 @@ def is_daemon_running(socket_path: Path = None) -> bool:
         return True
     except (socket.error, OSError):
         return False
-
 
 def get_socket_path() -> Path:
     """

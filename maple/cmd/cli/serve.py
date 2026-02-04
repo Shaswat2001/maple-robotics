@@ -29,7 +29,6 @@ from maple.cmd.cli.misc import daemon_url
 # invoke_without_command=True enables the callback to run when no subcommand given
 serve_app = typer.Typer(no_args_is_help=False, invoke_without_command=True)
 
-
 @serve_app.callback()
 def serve_root(
     ctx: typer.Context,
