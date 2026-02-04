@@ -39,7 +39,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from maple.utils.logging import get_logger
 from maple.state import store
-from maple.config import config
+from maple.utils.config import config
 
 log = get_logger("eval")
 

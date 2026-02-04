@@ -14,7 +14,7 @@ Commands:
 import yaml
 import typer 
 from rich import print
-from maple.config import config, CONFIG_FILE
+from maple.utils.config import config, CONFIG_FILE
 
 # Create the config sub-application
 # no_args_is_help=True ensures help is shown when no command is given

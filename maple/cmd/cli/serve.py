@@ -20,7 +20,7 @@ import requests
 import subprocess
 from rich import print
 from typing import Optional
-from maple.config import config
+from maple.utils.config import config
 from maple.server.daemon import VLADaemon
 from maple.cmd.cli.misc import daemon_url
 

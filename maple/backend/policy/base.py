@@ -37,7 +37,7 @@ from huggingface_hub import snapshot_download
 
 from maple.utils.retry import retry
 from maple.utils.logging import get_logger
-from maple.config import config as maple_config
+from maple.utils.config import config as maple_config
 from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("policy.base")

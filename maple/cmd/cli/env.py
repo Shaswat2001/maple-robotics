@@ -19,7 +19,7 @@ import typer
 import requests
 from rich import print
 from typing import List, Optional
-from maple.config import config
+from maple.utils.config import config
 from maple.cmd.cli.misc import daemon_url
 
 # Create the env sub-application

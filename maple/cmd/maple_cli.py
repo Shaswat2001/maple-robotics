@@ -39,9 +39,9 @@ from typing import Optional
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.cmd.cli.misc import daemon_url
-from maple.config import config, load_config
+from maple.utils.config import config, load_config
 from maple.utils.logging import setup_logging, get_logger
-from maple.eval import BatchEvaluator, format_results_markdown, format_results_csv
+from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
 from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app
 
 log = get_logger("cli")
