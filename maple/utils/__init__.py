@@ -1,3 +1,3 @@
 """
-Utilties file for MAPLE
+Utilities file for MAPLE
 """

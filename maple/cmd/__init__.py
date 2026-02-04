@@ -1,0 +1,3 @@
+"""
+MAPLE Command-line interface.
+"""

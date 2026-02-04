@@ -28,7 +28,6 @@ from maple.utils.logging import get_logger
 
 log = get_logger("health")
 
-
 class HealthStatus(Enum):
     """
     Health status enumeration for monitored containers.
@@ -40,7 +39,6 @@ class HealthStatus(Enum):
     UNHEALTHY = "unhealthy"
     UNKNOWN = "unknown"
     RESTARTING = "restarting"
-
 
 @dataclass
 class MonitoredContainer:

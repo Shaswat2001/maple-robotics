@@ -9,10 +9,12 @@ resources. It ensures proper cleanup when:
 - SIGTERM is received
 """
 
+import sys
 import atexit
 import signal
-import sys
+import docker
 import threading
+from docker.client import DockerClient
 from typing import Callable, Dict, Optional, Set
 
 from maple.utils.logging import get_logger
@@ -29,8 +31,7 @@ class CleanupManager:
     
     The class implements thread-safe singleton pattern to ensure only one
     instance exists throughout the application lifecycle.
-
-        """
+    """
 
     _instance: Optional["CleanupManager"] = None
     _lock = threading.Lock()
@@ -65,7 +66,7 @@ class CleanupManager:
                     cls._instance._register_handlers()
         return cls._instance
     
-    def _get_docker_client(self):
+    def _get_docker_client(self) -> DockerClient:
         """
         Get or create a Docker client instance.
         
@@ -76,13 +77,12 @@ class CleanupManager:
         """
         if self._docker_client is None:
             try:
-                import docker
                 self._docker_client = docker.from_env()
             except Exception as e:
                 log.warning(f"Could not create Docker client: {e}")
         return self._docker_client
     
-    def _register_handlers(self):
+    def _register_handlers(self) -> None:
         """
         Register signal handlers and atexit callback.
         
@@ -111,7 +111,7 @@ class CleanupManager:
         self._signals_registered = True
         log.debug("Cleanup handlers registered")
 
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, signum, frame) -> None:
         """
         Handle SIGINT and SIGTERM signals.
         
@@ -147,7 +147,7 @@ class CleanupManager:
         self._containers.add(container_id)
         log.debug(f"Registered container for cleanup: {name or container_id[:12]}")
     
-    def unregister_container(self, container_id: str):
+    def unregister_container(self, container_id: str) -> None:
         """
         Unregister a Docker container from automatic cleanup.
         
@@ -159,7 +159,7 @@ class CleanupManager:
         self._containers.discard(container_id)
         log.debug(f"Unregistered container: {container_id[:12]}")
     
-    def register_handler(self, name: str, handler: Callable):
+    def register_handler(self, name: str, handler: Callable) -> None:
         """
         Register a custom cleanup handler function.
         
@@ -173,7 +173,7 @@ class CleanupManager:
         self._cleanup_handlers[name] = handler
         log.debug(f"Registered cleanup handler: {name}")
     
-    def unregister_handler(self, name: str):
+    def unregister_handler(self, name: str) -> None:
         """
         Unregister a custom cleanup handler.
         
@@ -184,7 +184,7 @@ class CleanupManager:
         """
         self._cleanup_handlers.pop(name, None)
     
-    def cleanup_all(self):
+    def cleanup_all(self) -> None:
         """
         Clean up all registered resources.
         
@@ -228,7 +228,7 @@ class CleanupManager:
         self._cleanup_handlers.clear()
         self._shutting_down = False
     
-    def _stop_container(self, client, container_id: str):
+    def _stop_container(self, client, container_id: str) -> None:
         """
         Stop and remove a single Docker container.
         
@@ -276,7 +276,6 @@ class CleanupManager:
 
 
 # Convenience functions using global instance
-
 def register_container(container_id: str, name: str = None) -> None:
     """
     Register a container for automatic cleanup.
@@ -288,7 +287,6 @@ def register_container(container_id: str, name: str = None) -> None:
     """
     CleanupManager.instance().register_container(container_id, name)
 
-
 def unregister_container(container_id: str) -> None:
     """
     Unregister a container from automatic cleanup.
@@ -298,7 +296,6 @@ def unregister_container(container_id: str) -> None:
     :param container_id: Docker container ID to unregister.
     """
     CleanupManager.instance().unregister_container(container_id)
-
 
 def register_cleanup_handler(name: str, handler: Callable) -> None:
     """
@@ -310,7 +307,6 @@ def register_cleanup_handler(name: str, handler: Callable) -> None:
     :param handler: Callable that performs cleanup (takes no arguments).
     """
     CleanupManager.instance().register_handler(name, handler)
-
 
 def cleanup_all() -> None:
     """

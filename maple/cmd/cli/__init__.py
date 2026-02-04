@@ -1,3 +1,7 @@
+"""
+Sub functionalities of the MAPLE CLI
+"""
+
 from .pull import pull_app
 from .serve import serve_app
 from .list import list_app
