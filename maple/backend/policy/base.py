@@ -17,6 +17,7 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 from docker.errors import NotFound, APIError
+from docker.client.containers import Container
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
@@ -309,8 +310,13 @@ class PolicyBackend(ABC):
                 unregister_container(container.id)
             raise RuntimeError(f"Failed to serve policy: {e}")
 
-    def _wait_for_port(self, container, max_attempts: int = 10) -> Optional[int]:
-        """Wait for container port mapping to be ready."""
+    def _wait_for_port(self, container: Container, max_attempts: int = 10) -> Optional[int]:
+        """Wait for container port mapping to be ready.
+        
+        param: container: Docker container object
+        param: max_attempts: Max attempts to allow for the container to be running on the port
+        return: Port ID on which the container is running (None if it fails)
+        """
         for _ in range(max_attempts):
             container.reload()
             port_info = container.attrs["NetworkSettings"]["Ports"]
@@ -322,7 +328,7 @@ class PolicyBackend(ABC):
             time.sleep(0.5)
         return None
     
-    def _load_model(self, handle: PolicyHandle, device: str, attn_implementation: str):
+    def _load_model(self, handle: PolicyHandle, device: str, attn_implementation: str) -> None:
         """Load model inside the container."""
         base_url = self._get_base_url(handle)
         
