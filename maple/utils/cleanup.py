@@ -29,16 +29,8 @@ class CleanupManager:
     
     The class implements thread-safe singleton pattern to ensure only one
     instance exists throughout the application lifecycle.
-    
-    Attributes:
-        _instance: Singleton instance of CleanupManager.
-        _lock: Threading lock for thread-safe singleton creation.
-        _containers: Set of Docker container IDs registered for cleanup.
-        _cleanup_handlers: Dictionary of custom cleanup handlers.
-        _docker_client: Cached Docker client instance.
-        _signals_registered: Flag indicating if signal handlers are registered.
-        _shutting_down: Flag to prevent recursive cleanup calls.
-    """
+
+        """
 
     _instance: Optional["CleanupManager"] = None
     _lock = threading.Lock()
