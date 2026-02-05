@@ -12,7 +12,7 @@ Commands:
 import typer 
 import requests
 from rich import print
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.cmd.cli.misc import daemon_url
 
 # Create the policy sub-application
@@ -34,6 +34,7 @@ def policy_info(
     :param port: Daemon port number.
     :param policy_id: Identifier of the policy container.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -67,6 +68,7 @@ def stop_policy(
     :param port: Daemon port number.
     :param policy_id: Identifier of the policy container to stop.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     

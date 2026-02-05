@@ -13,7 +13,7 @@ Commands:
 import typer 
 import requests
 from rich import print
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.cmd.cli.misc import daemon_url
 
 # Create the list sub-application
@@ -31,6 +31,7 @@ def list_policy(port: int = typer.Option(None, "--port")) -> None:
     
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -51,6 +52,7 @@ def list_env(port: int = typer.Option(None, "--port")) -> None:
     
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     

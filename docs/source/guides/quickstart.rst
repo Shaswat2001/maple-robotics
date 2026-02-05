@@ -34,7 +34,7 @@ Download policy weights from Hugging Face and pull docker image:
 
    maple pull policy openvla:latest
 
-This downloads the OpenVLA 7B model to ``~/.maple/weights/``.
+This downloads the OpenVLA 7B model to ``~/.maple/models/``.
 
 Step 3: Serve the Policy
 ========================

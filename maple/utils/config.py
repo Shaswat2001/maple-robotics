@@ -368,7 +368,6 @@ def load_config(config_path: Path = None) -> Config:
     
     # Apply environment variable overrides (highest precedence)
     _apply_env_vars(config)
-    
     return config
 
 def init_config_file():

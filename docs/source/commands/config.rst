@@ -68,6 +68,10 @@ Create default config file.
 
    maple config init [OPTIONS]
 
+Notes
+^^^^^
+- Please restart the CLI Daemon to load the new config properly.
+
 Options
 ^^^^^^^
 

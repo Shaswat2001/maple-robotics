@@ -14,7 +14,7 @@ Commands:
 import yaml
 import typer 
 from rich import print
-from maple.utils.config import config, CONFIG_FILE
+from maple.utils.config import get_config, CONFIG_FILE
 
 # Create the config sub-application
 # no_args_is_help=True ensures help is shown when no command is given
@@ -29,6 +29,7 @@ def config_show() -> None:
     This includes all configuration sections (daemon, logging, run, eval, etc.)
     with their current values, whether from the config file or defaults.
     """
+    config = get_config()
     print("[cyan]Current configuration:[/cyan]\n")
     # Convert config to dict and dump as YAML for readable output
     # default_flow_style=False ensures block style (multi-line)
@@ -46,6 +47,7 @@ def config_init(force: bool = typer.Option(False, "--force", "-f", help="Overwri
     
     :param force: If True, overwrite existing config file without prompting.
     """
+    config = get_config()
     # Check if config already exists
     if CONFIG_FILE.exists() and not force:
         # Warn user and exit without making changes

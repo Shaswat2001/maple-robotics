@@ -50,7 +50,7 @@ Output:
    Policy Info:
     Name: openvla
     Loaded: True
-    Model Path: /models/weights
+    Model Path: /models/openvla
     Device: cpu
     Image Size: [224, 224]
    

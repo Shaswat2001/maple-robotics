@@ -29,7 +29,7 @@ from docker.errors import NotFound, APIError
 
 from maple.utils.retry import retry
 from maple.utils.logging import get_logger
-from maple.utils.config import config as maple_config
+from maple.utils.config import get_config
 from maple.utils.cleanup import register_container, unregister_container
 
 log = get_logger("env.base")
@@ -46,6 +46,7 @@ def _get_config_value(attr: str, default: Any) -> Any:
     :param default: Default value to use if config unavailable.
     :return: Configuration value or default.
     """
+    maple_config = get_config()
     try:
         if attr == "memory_limit":
             # Env uses less memory than policy by default

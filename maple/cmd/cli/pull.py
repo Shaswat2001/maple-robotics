@@ -13,7 +13,7 @@ Commands:
 import typer 
 import requests
 from rich import print
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.cmd.cli.misc import daemon_url
 
 # Create the pull sub-application
@@ -35,6 +35,7 @@ def pull_policy(
     :param name: Policy specification string (name or name:version).
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -63,6 +64,7 @@ def pull_env(
     :param name: Environment name or image specification.
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     

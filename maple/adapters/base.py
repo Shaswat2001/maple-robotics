@@ -5,10 +5,9 @@ import math
 import base64
 import numpy as np
 from PIL import Image
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
 
-class Adapter(ABC):
+class Adapter:
     """
     Base adapter between an environment and a policy.
     """
@@ -16,23 +15,21 @@ class Adapter(ABC):
     def __init__(self):
         pass
     
-    @abstractmethod
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
         """Abstract method to transform env observation to policy input.
         
         :param raw_obs: Raw observation from the environment.
         :return: Tranformed observation needed by the policy (model).
         """
-        pass
+        raise NotImplementedError
         
-    @abstractmethod
     def transform_action(self, raw_action: List[float]) -> List[float]:
         """Abstract method to transform policy output to env action.
         
         :param raw_action: Raw output from the policy.
         :return: Tranformed action needed by the env.
         """
-        pass
+        raise NotImplementedError
 
     def decode_image(self, image: str) -> Image.Image:
         """Decode base64 image to PIL Image.

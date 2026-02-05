@@ -20,7 +20,7 @@ import requests
 import subprocess
 from rich import print
 from typing import Optional
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.server.daemon import VLADaemon
 from maple.cmd.cli.misc import daemon_url
 
@@ -51,6 +51,7 @@ def serve_root(
     :param device: Default device for policy containers (e.g., 'cuda:0', 'cpu').
     :param detach: If True, run daemon in background as separate process.
     """
+    config = get_config()
     # If a subcommand was invoked (policy/env), don't start daemon
     if ctx.invoked_subcommand is not None:
         return
@@ -111,6 +112,8 @@ def serve_policy(
     :param host_port: Optional specific port to bind the policy container to.
     :param attn: Attention implementation (flash_attention_2, sdpa, eager).
     """
+    
+    config = get_config()
     # Use config defaults for unspecified parameters
     port = port or config.daemon.port
     device = device or config.policy.default_device
@@ -157,6 +160,8 @@ def serve_env(
     :param num_envs: Number of environment instances to create.
     :param host_port: Optional specific port (only valid when num_envs=1).
     """
+
+    config = get_config()
     # Use config defaults for unspecified parameters
     port = port or config.daemon.port
     num_envs = num_envs if num_envs is not None else config.env.default_num_envs

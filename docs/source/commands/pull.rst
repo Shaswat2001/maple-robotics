@@ -50,7 +50,7 @@ Examples
 Notes
 -----
 
-- Weights are stored in ``~/.maple/weights/``
+- Weights are stored in ``~/.maple/models/``
 - Download progress is shown in the daemon logs
 - Subsequent pulls use cached weights
 

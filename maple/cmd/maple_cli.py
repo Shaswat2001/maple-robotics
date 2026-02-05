@@ -39,7 +39,7 @@ from typing import Optional
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.cmd.cli.misc import daemon_url
-from maple.utils.config import config, load_config
+from maple.utils.config import get_config, load_config
 from maple.utils.logging import setup_logging, get_logger
 from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
 from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app
@@ -68,7 +68,7 @@ def main_callback(
     """
     
     # Load configuration from file (or use defaults)
-    load_config(config_file)
+    config = load_config(config_file)
     
     # Override logging settings with CLI args
     # Verbose flag takes precedence over config file
@@ -119,7 +119,7 @@ def run(
     :param timeout: Timeout multiplier for HTTP request.
     :param port: Daemon port number.
     """
-
+    config = get_config()
     # Use config defaults for any unspecified parameters
     port = port or config.daemon.port
     max_steps = max_steps if max_steps is not None else config.run.max_steps
@@ -205,6 +205,7 @@ def status(port: int = typer.Option(None, "--port")) -> None:
     :param port: Daemon port number.
     """
 
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -229,6 +230,7 @@ def stop(port: int = typer.Option(None, "--port")) -> None:
     :param port: Daemon port number.
     """
 
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -283,6 +285,7 @@ def eval_cmd(
     :param port: Daemon port number.
     """
     
+    config = get_config()
     # Use config defaults
     port = port or config.daemon.port
     max_steps = max_steps if max_steps is not None else config.eval.max_steps

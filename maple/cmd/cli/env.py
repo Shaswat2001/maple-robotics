@@ -19,7 +19,7 @@ import typer
 import requests
 from rich import print
 from typing import List, Optional
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.cmd.cli.misc import daemon_url
 
 # Create the env sub-application
@@ -45,6 +45,7 @@ def setup_env(
     :param task: Task specification string.
     :param seed: Optional random seed for environment initialization.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
 
@@ -87,6 +88,7 @@ def reset_env(
     :param env_id: Identifier of the environment container.
     :param seed: Optional random seed for reset.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
 
@@ -132,6 +134,7 @@ def step_env(
     :param action: List of action values to execute.
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
 
@@ -172,6 +175,7 @@ def env_info(
     :param port: Daemon port number.
     :param env_id: Identifier of the environment container.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     
@@ -210,6 +214,7 @@ def env_tasks(
     :param suite: Optional suite name to filter results.
     :param port: Daemon port number.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
 
@@ -268,6 +273,7 @@ def stop_env(
     :param port: Daemon port number.
     :param env_id: Optional identifier of specific environment to stop.
     """
+    config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
     

@@ -28,7 +28,7 @@ from typing import List, Dict, Any, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from maple.state import store
-from maple.utils.config import config
+from maple.utils.config import get_config
 from maple.utils.logging import get_logger
 
 log = get_logger("eval")
@@ -486,6 +486,7 @@ class BatchEvaluator:
         :param progress_callback: Optional callback(completed, total, result).
         :return: BatchResults with all episode results and statistics.
         """
+        config = get_config()
         # Use default seed if not specified
         seeds = seeds or [0]
         
