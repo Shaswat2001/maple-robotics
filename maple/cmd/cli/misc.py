@@ -26,7 +26,6 @@ def daemon_url(port: int):
     """
     return f"http://0.0.0.0:{port}"
 
-
 def parse_policy_env(spec: str) -> Tuple[str, str]:
     """
     Parse policy@env shorthand specification.

@@ -90,7 +90,6 @@ def serve_root(
     daemon = VLADaemon(port=port, device=device)
     daemon.start()
 
-
 @serve_app.command("policy")
 def serve_policy(
     name: str,
@@ -138,7 +137,6 @@ def serve_policy(
     print(f"  Port: http://localhost:{data.get('port')}")
     print(f"  Device: {data.get('device')}")
     print(f"  Attention: {data.get('attn_implementation')}")
-
 
 @serve_app.command("env")
 def serve_env(

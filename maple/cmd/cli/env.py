@@ -158,7 +158,6 @@ def step_env(
     print(f"  Terminated: {data.get('terminated', False)}")
     print(f"  Truncated: {data.get('truncated', False)}")
 
-
 @env_app.command("info")
 def env_info(
     port: int = typer.Option(None, "--port"),

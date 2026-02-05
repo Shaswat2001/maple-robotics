@@ -144,7 +144,6 @@ def init_db() -> None:
         """)
     log.debug("Database initialized")
 
-
 def add_policy(name: str, version: str, path: str, repo: str = None) -> int:
     """
     Add or update a pulled policy.
@@ -170,7 +169,6 @@ def add_policy(name: str, version: str, path: str, repo: str = None) -> int:
         """, (name, version, path, repo, time.time()))
         return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
-
 def get_policy(name: str, version: str) -> Optional[Dict]:
     """
     Get a pulled policy.
@@ -188,7 +186,6 @@ def get_policy(name: str, version: str) -> Optional[Dict]:
         ).fetchone()
         return dict(row) if row else None
 
-
 def list_policies() -> List[Dict]:
     """
     List all pulled policies.
@@ -200,7 +197,6 @@ def list_policies() -> List[Dict]:
     with _get_conn() as conn:
         rows = conn.execute("SELECT * FROM policies ORDER BY pulled_at DESC").fetchall()
         return [dict(row) for row in rows]
-
 
 def remove_policy(name: str, version: str) -> bool:
     """
@@ -219,7 +215,6 @@ def remove_policy(name: str, version: str) -> bool:
             (name, version)
         )
         return cursor.rowcount > 0
-
 
 def add_env(name: str, image: str) -> int:
     """
@@ -242,7 +237,6 @@ def add_env(name: str, image: str) -> int:
         """, (name, image, time.time()))
         return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
-
 def get_env(name: str) -> Optional[dict]:
     """
     Get a pulled environment.
@@ -256,7 +250,6 @@ def get_env(name: str) -> Optional[dict]:
         row = conn.execute("SELECT * FROM envs WHERE name = ?", (name,)).fetchone()
         return dict(row) if row else None
 
-
 def list_envs() -> List[dict]:
     """
     List all pulled environments.
@@ -268,7 +261,6 @@ def list_envs() -> List[dict]:
     with _get_conn() as conn:
         rows = conn.execute("SELECT * FROM envs ORDER BY pulled_at DESC").fetchall()
         return [dict(row) for row in rows]
-
 
 def add_container(
     container_id: str,
@@ -294,7 +286,6 @@ def add_container(
     :param port: Port number for container communication.
     :param status: Current container status.
     :param metadata: Optional dictionary of additional container metadata.
-    
     :return: The container ID that was registered.
     """
     with _get_conn() as conn:
@@ -307,7 +298,6 @@ def add_container(
             time.time(), json.dumps(metadata or {})
         ))
     return container_id
-
 
 def update_container_status(container_id: str, status: str):
     """
@@ -324,7 +314,6 @@ def update_container_status(container_id: str, status: str):
             (status, container_id)
         )
 
-
 def remove_container(container_id: str) -> bool:
     """
     Remove a container from tracking.
@@ -333,13 +322,11 @@ def remove_container(container_id: str) -> bool:
     the actual container.
     
     :param container_id: Unique container identifier.
-    
     :return: True if a container was removed, False if not found.
     """
     with _get_conn() as conn:
         cursor = conn.execute("DELETE FROM containers WHERE id = ?", (container_id,))
         return cursor.rowcount > 0
-
 
 def get_container(container_id: str) -> Optional[dict]:
     """
@@ -349,7 +336,6 @@ def get_container(container_id: str) -> Optional[dict]:
     metadata JSON field into a dictionary.
     
     :param container_id: Unique container identifier.
-    
     :return: Dictionary containing container data with parsed metadata, or None if not found.
     """
     with _get_conn() as conn:
@@ -360,7 +346,6 @@ def get_container(container_id: str) -> Optional[dict]:
             return d
         return None
 
-
 def get_container_by_name(name: str) -> Optional[dict]:
     """
     Get a container by name.
@@ -369,7 +354,6 @@ def get_container_by_name(name: str) -> Optional[dict]:
     Deserializes the metadata JSON field into a dictionary.
     
     :param name: Container name to search for.
-    
     :return: Dictionary containing container data with parsed metadata, or None if not found.
     """
     with _get_conn() as conn:
@@ -379,7 +363,6 @@ def get_container_by_name(name: str) -> Optional[dict]:
             d["metadata"] = json.loads(d["metadata"]) if d["metadata"] else {}
             return d
         return None
-
 
 def list_containers(type: str = None, status: str = None) -> List[dict]:
     """
@@ -391,7 +374,6 @@ def list_containers(type: str = None, status: str = None) -> List[dict]:
     
     :param type: Optional filter for container type ('policy' or 'env').
     :param status: Optional filter for container status.
-    
     :return: List of dictionaries containing container data with parsed metadata.
     """
     query = "SELECT * FROM containers WHERE 1=1"
@@ -415,7 +397,6 @@ def list_containers(type: str = None, status: str = None) -> List[dict]:
             result.append(d)
         return result
 
-
 def clear_containers():
     """
     Clear all container records.
@@ -425,7 +406,6 @@ def clear_containers():
     """
     with _get_conn() as conn:
         conn.execute("DELETE FROM containers")
-
 
 def add_run(
     run_id: str,
@@ -447,7 +427,6 @@ def add_run(
     :param task: Task name or identifier.
     :param instruction: Optional natural language instruction for the task.
     :param metadata: Optional dictionary of additional run metadata.
-    
     :return: The run ID that was registered.
     """
     with _get_conn() as conn:
@@ -456,7 +435,6 @@ def add_run(
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (run_id, policy_id, env_id, task, instruction, time.time(), json.dumps(metadata or {})))
     return run_id
-
 
 def finish_run(run_id: str,
                steps: int,
@@ -492,7 +470,6 @@ def finish_run(run_id: str,
             WHERE id = ?
         """, (time.time(), steps, total_reward, int(success), int(terminated), int(truncated), video_path, run_id))
 
-
 def get_run(run_id: str) -> Optional[Dict]:
     """
     Get a run by ID.
@@ -513,7 +490,6 @@ def get_run(run_id: str) -> Optional[Dict]:
             d["truncated"] = bool(d["truncated"]) if d["truncated"] is not None else None
             return d
         return None
-
 
 def list_runs(policy_id: str = None, task: str = None, limit: int = 100) -> List[Dict]:
     """
@@ -550,7 +526,6 @@ def list_runs(policy_id: str = None, task: str = None, limit: int = 100) -> List
             d["success"] = bool(d["success"]) if d["success"] is not None else None
             result.append(d)
         return result
-
 
 def get_run_stats(policy_id: str = None, task: str = None) -> Dict:
     """
@@ -596,7 +571,6 @@ def get_run_stats(policy_id: str = None, task: str = None) -> Dict:
             "min_reward": row["min_reward"],
             "max_reward": row["max_reward"],
         }
-
 
 def load_state() -> Dict:
     """
