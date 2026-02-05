@@ -15,10 +15,10 @@ Synopsis
 Subcommands
 ===========
 
-act
+info
 ---
 
-Get action from policy for a single observation.
+Get info about policy in the container.
 
 .. code-block:: bash
 
@@ -33,33 +33,26 @@ Arguments
 Options
 ^^^^^^^
 
-``--image, -i PATH`` (required)
-    Path to image file
-
-``--instruction TEXT`` (required)
-    Language instruction
-
-``--unnorm-key, -u TEXT``
-    Dataset key for action unnormalization
-
 ``--port INTEGER``
-    Daemon port
+    Daemon port to connect to (default: from config, typically 8000)
 
 Example
 ^^^^^^^
 
 .. code-block:: bash
 
-   maple policy act openvla-7b-abc123 \
-       --image observation.png \
-       --instruction "pick up the red block"
+   maple policy info openvla-7b-abc123
 
 Output:
 
 .. code-block:: text
 
-   Action: [0.012, -0.034, 0.156, 0.001, 0.002, 0.003, 1.0]
-
+   Policy Info:
+    Name: openvla
+    Loaded: True
+    Model Path: /models/weights
+    Device: cpu
+    Image Size: [224, 224]
 stop
 ----
 

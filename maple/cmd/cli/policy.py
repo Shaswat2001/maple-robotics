@@ -21,8 +21,8 @@ policy_app = typer.Typer(no_args_is_help=True)
 
 @policy_app.command("info")
 def policy_info(
-    port: int = typer.Option(None, "--port"),
-    policy_id: str = typer.Option(None, "--id", help="Policy ID")
+    policy_id: str = typer.Argument(..., help="Policy ID (e.g., openvla-latest-fe56e09d)"),
+    port: int = typer.Option(None, "--port")
 ) -> None:
     """
     Display information about a policy container.
@@ -47,14 +47,16 @@ def policy_info(
     # Display policy metadata
     data = r.json()
     print(f"[cyan]Policy Info:[/cyan]")
-    print(f"  Input: {data.get('inputs')}")
-    print(f"  Output: {data.get('outputs')}")
-    print(f"  Version: {data.get('versions')}")
+    print(f"  Name: {data.get('name')}")
+    print(f"  Loaded: {data.get('loaded')}")
+    print(f"  Model Path: {data.get('model_path')}")
+    print(f"  Device: {data.get('device')}")
+    print(f"  Image Size: {data.get('image_size')}")
 
 @policy_app.command("stop")
 def stop_policy(
+    policy_id: str = typer.Argument(..., help="Policy ID (e.g., openvla-latest-fe56e09d)"),
     port: int = typer.Option(None, "--port"),
-    policy_id: str = typer.Option(None, "--id", help="Policy ID")
 ) -> None:
     """
     Stop a specific policy container.

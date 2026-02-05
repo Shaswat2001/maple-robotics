@@ -92,7 +92,7 @@ def serve_root(
 
 @serve_app.command("policy")
 def serve_policy(
-    name: str,
+    name: str = typer.Argument(..., help="name (e.g., openvla:latest)"),
     port: int = typer.Option(None, "--port"),
     device: str = typer.Option(None, "--device", "-d"),
     host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port"),
@@ -140,7 +140,7 @@ def serve_policy(
 
 @serve_app.command("env")
 def serve_env(
-    name: str,
+    name: str = typer.Argument(..., help="name (e.g., libero)"),
     port: int = typer.Option(None, "--port"),
     num_envs: int = typer.Option(None, "--num-envs", min=1),
     host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port (only with num_envs=1)")

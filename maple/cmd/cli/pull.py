@@ -22,7 +22,7 @@ pull_app = typer.Typer(no_args_is_help=True)
 
 @pull_app.command("policy")
 def pull_policy(
-    name: str,
+    name: str = typer.Argument(..., help="name (e.g., openvla:7b)"),
     port: int = typer.Option(None, "--port")
 ) -> None:
     """
@@ -50,7 +50,7 @@ def pull_policy(
 
 @pull_app.command("env")
 def pull_env(
-    name: str,
+    name: str = typer.Argument(..., help="name (e.g., libero)"),
     port: int = typer.Option(None, "--port")
 ) -> None:
     """

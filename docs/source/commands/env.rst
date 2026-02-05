@@ -179,7 +179,7 @@ Output:
 
 Notes
 ^^^^^
-- You need to setup the environment first before calling info. 
+- You need to ``setup`` the environment first before calling ``info``. 
 
 stop
 ----
@@ -233,7 +233,7 @@ Arguments
 Options
 ^^^^^^^
 
-``--suite STR``
+``--suite TEXT``
     If the environment have specific suites as well 
 
 ``--port INTEGER``
