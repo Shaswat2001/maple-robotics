@@ -38,7 +38,7 @@ Options
     Port to run daemon on (default: from config, typically 8000)
 
 ``--device TEXT``
-    Default GPU device (default: cuda:0)
+    Default GPU device (default: from config, typically cpu)
 
 ``--detach, -d``
     Run daemon in background
@@ -79,10 +79,10 @@ Options
 -------
 
 ``--port INTEGER``
-    Daemon port to connect to
+    Daemon port to connect to (default: from config, typically 8000)
 
 ``--device, -d TEXT``
-    GPU device for this policy (default: cuda:0)
+    GPU device for this policy (default: from config, typically cpu)
 
 ``--host-port, -p INTEGER``
     Bind container to specific host port

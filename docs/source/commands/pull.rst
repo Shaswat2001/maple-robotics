@@ -31,7 +31,7 @@ Options
 -------
 
 ``--port INTEGER``
-    Daemon port to connect to
+    Daemon port to connect to (default: from config, typically 8000)
 
 Examples
 --------
@@ -73,7 +73,7 @@ Options
 -------
 
 ``--port INTEGER``
-    Daemon port to connect to
+    Daemon port to connect to (default: from config, typically 8000)
 
 Examples
 --------
@@ -91,4 +91,4 @@ Notes
 
 - Requires Docker to be installed and running
 - Images are pulled from Docker Hub or built locally
-- Build images manually with: ``docker build -t maple/libero:latest docker/libero/``
+- Build images manually with: ``docker build -t maplerobotics/libero:latest docker/libero/``

@@ -28,8 +28,8 @@ env_app = typer.Typer(no_args_is_help=True)
 
 @env_app.command("setup")
 def setup_env(
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     port: int = typer.Option(None, "--port"),
-    env_id: str = typer.Option(None, "--id", help="Environment ID"),
     task: str = typer.Option(None, "--task", "-t", help="Task spec (e.g., libero_10/0)"),
     seed: int = typer.Option(None, "--seed", "-s")
 ) -> None:
@@ -73,8 +73,8 @@ def setup_env(
 
 @env_app.command("reset")
 def reset_env(
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     port: int = typer.Option(None, "--port"),
-    env_id: str = typer.Option(None, "--id", help="Environment ID"),
     seed: int = typer.Option(None, "--seed", "-s")
 ) -> None:
     """
@@ -117,7 +117,7 @@ def reset_env(
 
 @env_app.command("step")
 def step_env(
-    env_id: str = typer.Option(None, "--id", help="Environment ID"),
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     action: List[float] = typer.Option(..., "--action", "-a", help="Action values"),
     port: int = typer.Option(None, "--port")
 ) -> None:
@@ -160,8 +160,8 @@ def step_env(
 
 @env_app.command("info")
 def env_info(
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     port: int = typer.Option(None, "--port"),
-    env_id: str = typer.Option(None, "--id", help="Environment ID")
 ) -> None:
     """
     Display information about an environment.
@@ -255,8 +255,8 @@ def env_tasks(
 
 @env_app.command("stop")
 def stop_env(
+    env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     port: int = typer.Option(None, "--port"),
-    env_id: str = typer.Option(None, "--id", help="Environment ID")
 ) -> None:
     """
     Stop one or all environment containers.

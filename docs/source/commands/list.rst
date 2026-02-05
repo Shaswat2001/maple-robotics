@@ -25,7 +25,7 @@ Options
 -------
 
 ``--port INTEGER``
-    Daemon port
+    Daemon port to connect to (default: from config, typically 8000)
 
 Example
 -------
@@ -55,7 +55,7 @@ Options
 -------
 
 ``--port INTEGER``
-    Daemon port
+    Daemon port to connect to (default: from config, typically 8000)
 
 Example
 -------
