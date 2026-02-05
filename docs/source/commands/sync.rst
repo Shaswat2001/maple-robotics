@@ -174,12 +174,6 @@ Options
 ``--dry-run``
     Show what would be removed without actually removing
 
-``--yes, -y``
-    Auto-confirm all removals
-
-``--port INTEGER``
-    Daemon port to connect to (default: from config, typically 8000)
-
 Examples
 --------
 
@@ -187,9 +181,6 @@ Examples
 
    # Preview all sync operations
    maple sync all --dry-run
-
-   # Sync everything
-   maple sync all -y
 
 Output
 ------
@@ -277,7 +268,7 @@ Common Use Cases
    rm -rf ~/.maple/models/openvla/7b/
 
    # Database still has entry - fix it
-   maple sync policies -y
+   maple sync policies
 
 **Docker image cleanup**:
 
@@ -287,7 +278,7 @@ Common Use Cases
    docker rmi libero:latest
 
    # Update database
-   maple sync envs -y
+   maple sync envs
 
 **Regular maintenance**:
 
@@ -295,7 +286,7 @@ Common Use Cases
 
    # Weekly maintenance script
    maple sync all --dry-run  # Check first
-   maple sync all -y         # Apply if needed
+   maple sync all        # Apply if needed
 
 **Before important operations**:
 
@@ -305,10 +296,7 @@ Common Use Cases
    maple sync all --dry-run
 
    # If issues found, fix them
-   maple sync all -y
-
-   # Then proceed with evaluation
-   maple eval ...
+   maple sync all
 
 Error Handling
 --------------

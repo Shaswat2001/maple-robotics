@@ -11,7 +11,7 @@ Development Setup
 
 .. code-block:: bash
 
-   git clone https://github.com/arenaxlabs/maple.git
+   git clone https://github.com/Shaswat2001/maple-robotics.git
    cd maple
 
 2. Create a virtual environment:

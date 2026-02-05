@@ -186,7 +186,7 @@ If you manually deleted files, sync the database:
 .. code-block:: bash
 
    # After manual deletion: rm -rf ~/.maple/models/openvla/
-   maple sync policies -y
+   maple sync policies
 
 Step 10: Stop Everything
 ========================
