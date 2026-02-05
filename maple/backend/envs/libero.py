@@ -38,7 +38,7 @@ class LiberoEnvBackend(EnvBackend):
     """
     
     name = "libero"
-    _image = "shaswatai/robotics_envs:libero"
+    _image = "maplerobotics/libero:latest"
     _container_port: int = 8000
     _startup_timeout: int = 120
     _health_check_interval: int = 2

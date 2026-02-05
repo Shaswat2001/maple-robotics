@@ -29,7 +29,7 @@ Why Maple?
 
 **The Problem**
 
-Evaluating robotics policies—whether Vision-Language-Action (VLA) models, imitation learning policies, 
+Evaluating robotics policies—whether Vision-Language-Action (VLA) models, foundation models, imitation learning policies, 
 or reinforcement learning agents—across different simulation environments is painful:
 
 - **Environment chaos**: Every simulator has its own observation format, action space, and API quirks

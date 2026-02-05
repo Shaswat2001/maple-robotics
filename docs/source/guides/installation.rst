@@ -65,7 +65,7 @@ For significantly faster policy inference, GPU acceleration is recommended.
    CPU-only inference is supported but can be 10-100x slower depending on the policy.
    Only install GPU support if you have an NVIDIA GPU.
 
-2. Install NVIDIA Container Toolkit
+1. Install NVIDIA Container Toolkit
 ------------------------------------
 
 **Only required if you want GPU acceleration.**
@@ -85,7 +85,7 @@ For GPU support with NVIDIA GPUs:
     sudo apt-get install -y nvidia-docker2
     sudo systemctl restart docker
 
-3. Verify GPU Access
+2. Verify GPU Access
 --------------------
 
 .. code-block:: bash
@@ -127,17 +127,17 @@ Available Pre-built Images
 
 The following images are available on Docker Hub:
 
-- ``maple/openvla:latest`` - OpenVLA policy
-- ``maple/smolvla:latest`` - SmolVLA policy  
-- ``maple/libero:latest`` - LIBERO environment
+- ``maplerobotics/openvla:latest`` - OpenVLA policy
+- ``maplerobotics/smolvla:latest`` - SmolVLA policy  
+- ``maplerobotics/libero:latest`` - LIBERO environment
 
 You can also pull images manually:
 
 .. code-block:: bash
 
-    docker pull maple/openvla:latest
-    docker pull maple/smolvla:latest
-    docker pull maple/libero:latest
+    docker pull maplerobotics/openvla:latest
+    docker pull maplerobotics/smolvla:latest
+    docker pull maplerobotics/libero:latest
 
 Building Custom Images (Advanced)
 ==================================

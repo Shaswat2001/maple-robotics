@@ -36,7 +36,7 @@ class OpenVLAPolicy(PolicyBackend):
     """
     
     name = "openvla"
-    _image = "shaswatai/robotics_vla:openvla"
+    _image = "maplerobotics/openvla:latest"
     
     # Map version strings to HuggingFace repository paths
     _hf_repos = {
