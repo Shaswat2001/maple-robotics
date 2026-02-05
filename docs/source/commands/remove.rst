@@ -154,7 +154,7 @@ Error Handling
 See Also
 ========
 
-- :doc:`../commands/sync` - Sync database with manually deleted resources
-- :doc:`../commands/pull` - Download policies and environments
-- :doc:`../commands/serve` - Start containers
-- :doc:`../commands/list` - List available resources
+- :doc:`sync` - Sync database with manually deleted resources
+- :doc:`pull` - Download policies and environments
+- :doc:`serve` - Start containers
+- :doc:`list` - List available resources
