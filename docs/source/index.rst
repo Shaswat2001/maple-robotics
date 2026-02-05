@@ -194,6 +194,7 @@ Quick Links
 
    commands/serve
    commands/pull
+   commands/run
    commands/eval
    commands/policy
    commands/env
