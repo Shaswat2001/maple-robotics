@@ -164,8 +164,32 @@ Output:
      Environments:
        • libero-x1y2z3w4
 
-Step 9: Stop Everything
-=======================
+Step 9: Cleanup Resources
+=========================
+
+Remove a policy when no longer needed:
+
+.. code-block:: bash
+
+   maple remove policy openvla 7b
+
+This stops containers, removes database entries, and deletes model weights.
+
+Remove an environment:
+
+.. code-block:: bash
+
+   maple remove env libero
+
+If you manually deleted files, sync the database:
+
+.. code-block:: bash
+
+   # After manual deletion: rm -rf ~/.maple/models/openvla/
+   maple sync policies -y
+
+Step 10: Stop Everything
+========================
 
 Stop a specific policy:
 
@@ -184,4 +208,7 @@ Next Steps
 
 - :doc:`configuration` — Customize defaults with config files
 - :doc:`../commands/eval` — Advanced evaluation options
+- :doc:`../commands/remove` — Clean resource management
+- :doc:`../commands/sync` — Database synchronization
 - :doc:`adding-policies` — Add support for new policies
+

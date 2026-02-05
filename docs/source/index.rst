@@ -199,6 +199,8 @@ Quick Links
    commands/policy
    commands/env
    commands/list
+   commands/remove
+   commands/sync
    commands/config
 
 .. toctree::

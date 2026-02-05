@@ -215,6 +215,23 @@ def remove_policy(name: str, version: str) -> bool:
             (name, version)
         )
         return cursor.rowcount > 0
+    
+def remove_env(name: str) -> bool:
+    """
+    Remove a pulled environment.
+    
+    Deletes a environment record from the database. Does not delete the actual
+    model files from disk.
+    
+    :param name: Name of the policy model.
+    :return: True if a policy was deleted, False if not found.
+    """
+    with _get_conn() as conn:
+        cursor = conn.execute(
+            "DELETE FROM envs WHERE name = ?",
+            (name,)
+        )
+        return cursor.rowcount > 0
 
 def add_env(name: str, image: str) -> int:
     """

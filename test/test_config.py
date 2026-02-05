@@ -62,9 +62,9 @@ class TestLoadConfig:
     @pytest.mark.unit
     def test_load_default(self, temp_config_dir):
         """Test loading with no config file (uses defaults)."""
-        from maple.utils.config import load_config, config
+        from maple.utils.config import load_config
         
-        load_config()
+        config = load_config()
         
         assert config.daemon.port == 8000
         assert config.policy.default_device == "cpu"
@@ -72,9 +72,9 @@ class TestLoadConfig:
     @pytest.mark.unit
     def test_load_from_file(self, config_file, temp_config_dir):
         """Test loading from config file."""
-        from maple.utils.config import load_config, config
+        from maple.utils.config import load_config
         
-        load_config(config_file)
+        config = load_config(config_file)
         
         assert config.daemon.port == 8000
         assert config.policy.default_device == "cpu"

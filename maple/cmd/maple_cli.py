@@ -42,7 +42,7 @@ from maple.cmd.cli.misc import daemon_url
 from maple.utils.config import get_config, load_config
 from maple.utils.logging import setup_logging, get_logger
 from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
-from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app
+from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app, remove_app, sync_app
 
 log = get_logger("cli")
 
@@ -84,6 +84,8 @@ app.add_typer(list_app, name="list")
 app.add_typer(env_app, name="env")
 app.add_typer(policy_app, name="policy")
 app.add_typer(config_app, name="config", help="Configuration management")
+app.add_typer(sync_app, name="sync", help="Update the database if manually deleted")
+app.add_typer(remove_app, name="remove", help="Remove policy and env")
 
 @app.command("run")
 def run(

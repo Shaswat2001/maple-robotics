@@ -8,3 +8,5 @@ from .list import list_app
 from .env import env_app
 from .policy import policy_app
 from .config import config_app
+from .rmv import remove_app
+from .snc import sync_app
