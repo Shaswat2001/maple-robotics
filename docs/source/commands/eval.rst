@@ -9,7 +9,7 @@ Synopsis
 
 .. code-block:: bash
 
-   maple eval POLICY_ID ENV_ID [OPTIONS]
+   maple eval POLICY_ID ENV_ID BACKEND [OPTIONS]
 
 Description
 ===========
@@ -25,6 +25,9 @@ Arguments
 
 ``ENV_ID``
     ID of a running environment (e.g., ``libero-x1y2z3w4``)
+
+``BACKEND``
+    Environment backend to load (e.g., ``libero``)
 
 Options
 =======
@@ -61,7 +64,7 @@ Options
     Number of parallel evaluations (experimental). Default: 1
 
 ``--port INTEGER``
-    Daemon port to connect to
+    Daemon port to connect to (default: from config, typically 8000)
 
 Examples
 ========
@@ -72,10 +75,10 @@ Basic Evaluation
 .. code-block:: bash
 
    # Evaluate on full suite
-   maple eval openvla-7b-abc libero-xyz --tasks libero_10 --seeds 0,1,2
+   maple eval openvla-7b-abc libero-xyz libero --tasks libero_10 --seeds 0,1,2
 
    # Evaluate specific tasks
-   maple eval openvla-7b-abc libero-xyz \
+   maple eval openvla-7b-abc libero-xyz libero \
        --tasks libero_10/0,libero_10/1 \
        --seeds 0,1,2,3,4
 
@@ -84,7 +87,7 @@ With Video Recording
 
 .. code-block:: bash
 
-   maple eval openvla-7b-abc libero-xyz \
+   maple eval openvla-7b-abc libero-xyz libero \
        --tasks libero_10 \
        --seeds 0 \
        --save-video \
@@ -95,7 +98,7 @@ Custom Output
 
 .. code-block:: bash
 
-   maple eval openvla-7b-abc libero-xyz \
+   maple eval openvla-7b-abc libero-xyz libero \
        --tasks libero_10 \
        --seeds 0,1,2 \
        --output ./results \
@@ -106,7 +109,7 @@ Extended Evaluation
 
 .. code-block:: bash
 
-   maple eval openvla-7b-abc libero-xyz \
+   maple eval openvla-7b-abc libero-xyz libero \
        --tasks libero_10 \
        --seeds 0,1,2,3,4,5,6,7,8,9 \
        --max-steps 500

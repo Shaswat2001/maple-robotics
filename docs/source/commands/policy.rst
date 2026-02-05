@@ -9,20 +9,20 @@ Synopsis
 
 .. code-block:: bash
 
-   maple policy act POLICY_ID --image PATH --instruction TEXT [OPTIONS]
+   maple policy info POLICY_ID [OPTIONS]
    maple policy stop POLICY_ID [OPTIONS]
 
 Subcommands
 ===========
 
 info
----
+----
 
-Get info about policy in the container.
+Get information about the policy in the container.
 
 .. code-block:: bash
 
-   maple policy act POLICY_ID --image PATH --instruction TEXT [OPTIONS]
+   maple policy info POLICY_ID [OPTIONS]
 
 Arguments
 ^^^^^^^^^
@@ -53,6 +53,7 @@ Output:
     Model Path: /models/weights
     Device: cpu
     Image Size: [224, 224]
+   
 stop
 ----
 

@@ -142,7 +142,7 @@ Output:
 info
 ----
 
-Info about the environment setup in the container.
+Get information about the environment setup in the container.
 
 .. code-block:: bash
 
@@ -179,7 +179,7 @@ Output:
 
 Notes
 ^^^^^
-- You need to ``setup`` the environment first before calling ``info``. 
+- You need to run ``setup`` on the environment first before calling ``info``.
 
 stop
 ----
@@ -216,9 +216,9 @@ Output:
    ✓ Stopped: libero-xyz
 
 tasks
-----
+-----
 
-Get the list of tasks in the specific environment suite.
+Get the list of tasks in a specific environment suite.
 
 .. code-block:: bash
 
@@ -234,7 +234,7 @@ Options
 ^^^^^^^
 
 ``--suite TEXT``
-    If the environment have specific suites as well 
+    Specific suite name (if the environment has multiple suites)
 
 ``--port INTEGER``
     Daemon port to connect to (default: from config, typically 8000)
