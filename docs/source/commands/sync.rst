@@ -333,7 +333,7 @@ Solution: Check file permissions on ``~/.maple/`` directory.
 See Also
 ========
 
-- :ref:`commands-remove` - Clean removal of resources
-- :ref:`commands-list` - List available resources
-- :ref:`commands-pull` - Download resources
+- :ref:`../commands/remove` - Clean removal of resources
+- :ref:`../commands/list` - List available resources
+- :ref:`../commands/pull` - Download resources
 - :ref:`guides-configuration` - Configure Maple paths
