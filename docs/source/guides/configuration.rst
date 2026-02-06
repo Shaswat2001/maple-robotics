@@ -37,7 +37,8 @@ This creates ``~/.maple/config.yaml``:
 
    policy:
      default_device: cuda:0
-     attn_implementation: sdpa  # flash_attention_2, sdpa, eager
+     model_kwargs: {}
+     model_load_kwargs: {}
 
    env:
      default_num_envs: 1
@@ -82,9 +83,6 @@ Override any config value with environment variables:
    * - ``MAPLE_DEVICE``
      - ``policy.default_device``
      - ``cuda:1``
-   * - ``MAPLE_ATTN``
-     - ``policy.attn_implementation``
-     - ``flash_attention_2``
    * - ``MAPLE_LOG_LEVEL``
      - ``logging.level``
      - ``DEBUG``

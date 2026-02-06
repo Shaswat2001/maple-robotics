@@ -32,7 +32,7 @@ Configuration sections:
 import os
 import yaml
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from dataclasses import dataclass, field, asdict
 
 from maple.utils.logging import get_logger
@@ -76,8 +76,9 @@ class PolicyConfig:
     """
     # Default device for policy models ('cpu', 'cuda:0', etc.)
     default_device: str = "cpu"
-    # Default attention mechanism: sdpa, flash_attention_2, eager
-    attn_implementation: str = "sdpa"
+    # Default model kwargs
+    model_kwargs: Dict[str, Any] = field(default_factory=dict) # Used during act
+    model_load_kwargs: Dict[str, Any] = field(default_factory=dict) # Used during serve
 
 @dataclass
 class EnvConfig:
@@ -243,7 +244,6 @@ def _apply_env_vars(cfg: Config) -> None:
     # This defines which env vars map to which config fields
     env_mappings = {
         "MAPLE_DEVICE": ("policy", "default_device"),
-        "MAPLE_ATTN": ("policy", "attn_implementation"),
         "MAPLE_LOG_LEVEL": ("logging", "level"),
         "MAPLE_LOG_FILE": ("logging", "file"),
         "MAPLE_MEMORY_LIMIT": ("containers", "memory_limit"),

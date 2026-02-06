@@ -31,11 +31,12 @@ Commands:
 - stop: Stop the daemon
 """
 
+import json
 import typer 
 import requests
 from rich import print
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.cmd.cli.misc import daemon_url
@@ -95,7 +96,7 @@ def run(
     instruction: Optional[str] = typer.Option(None, "--instruction", "-i", help="Override task instruction"),
     max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
     seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed"),
-    unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
+    model_kwargs: str = typer.Option(None, "--model-kwargs", "-u", help="Model-specific parameters"),
     save_video: bool = typer.Option(False, "--save-video", "-v", help="Save rollout video"),
     video_dir: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
     timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
@@ -115,13 +116,28 @@ def run(
     :param instruction: Optional instruction to override default task instruction.
     :param max_steps: Maximum number of steps before truncation.
     :param seed: Random seed for reproducibility.
-    :param unnorm_key: Dataset key for unnormalizing policy actions.
+    :param model_kwargs: Model-specific parameters.
     :param save_video: Whether to record and save episode video.
     :param video_dir: Directory path for saving videos.
     :param timeout: Timeout multiplier for HTTP request.
     :param port: Daemon port number.
     """
     config = get_config()
+
+    if model_kwargs:
+        try:
+            model_kwargs = json.loads(model_kwargs)
+            if not isinstance(model_kwargs, dict):
+                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
+                raise typer.Exit(1)
+        except json.JSONDecodeError as e:
+            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
+            raise typer.Exit(1)
+    else:
+        model_kwargs = {}
+    
+    model_kwargs = model_kwargs or config.policy.model_kwargs
+
     # Use config defaults for any unspecified parameters
     port = port or config.daemon.port
     max_steps = max_steps if max_steps is not None else config.run.max_steps
@@ -143,8 +159,8 @@ def run(
         payload["instruction"] = instruction
     if seed is not None:
         payload["seed"] = seed
-    if unnorm_key:
-        payload["unnorm_key"] = unnorm_key
+    if model_kwargs:
+        payload["model_kwargs"] = model_kwargs
     if video_dir:
         payload["video_dir"] = video_dir
     
@@ -253,7 +269,7 @@ def eval_cmd(
     seeds: str = typer.Option("0", "--seeds", "-s", help="Seeds (comma-separated, e.g., 0,1,2)"),
     max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
     timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
-    unnorm_key: Optional[str] = typer.Option(None, "--unnorm-key", "-u", help="Dataset key for action unnormalization"),
+    model_kwargs: str = typer.Option(None, "--model-kwargs", "-u", help="Model-specific parameters"),
     save_video: bool = typer.Option(None, "--save-video", "-v", help="Save rollout videos"),
     video_dir: Optional[str] = typer.Option(None, "--video-dir", help="Directory for videos"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory for results"),
@@ -278,7 +294,7 @@ def eval_cmd(
     :param seeds: Comma-separated list of random seeds.
     :param max_steps: Maximum steps per episode.
     :param timeout: Timeout multiplier for each episode request.
-    :param unnorm_key: Dataset key for action unnormalization.
+    :param model_kwargs: Model-specific parameters.
     :param save_video: Whether to save videos of all episodes.
     :param video_dir: Directory for saving videos.
     :param output: Output directory for results files.
@@ -296,6 +312,19 @@ def eval_cmd(
     video_dir = video_dir or config.eval.video_dir
     output_dir = Path(output).expanduser() if output else Path(config.eval.results_dir).expanduser()
     
+    if model_kwargs:
+        try:
+            model_kwargs = json.loads(model_kwargs)
+            if not isinstance(model_kwargs, dict):
+                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
+                raise typer.Exit(1)
+        except json.JSONDecodeError as e:
+            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
+            raise typer.Exit(1)
+    else:
+        model_kwargs = {}
+    
+    model_kwargs = model_kwargs or config.policy.model_kwargs
     # Parse seeds
     seed_list = [int(s.strip()) for s in seeds.split(",")]
     
@@ -354,7 +383,7 @@ def eval_cmd(
                 seeds=seed_list,
                 max_steps=max_steps,
                 timeout=timeout,
-                unnorm_key=unnorm_key,
+                model_kwargs=model_kwargs,
                 save_video=save_video,
                 video_dir=video_dir,
                 parallel=parallel,

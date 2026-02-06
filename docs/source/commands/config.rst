@@ -47,7 +47,8 @@ Output:
      health_check_interval: 30
    policy:
      default_device: cuda:0
-     attn_implementation: sdpa
+     model_kwargs: {}
+     model_load_kwargs: {}
    env:
      default_num_envs: 1
    daemon:

@@ -158,7 +158,8 @@ daemon:
 
 policy:
   default_device: cuda:0
-  attn_implementation: sdpa
+  model_kwargs: {}
+  model_load_kwargs: {}
 
 containers:
   memory_limit: 32g

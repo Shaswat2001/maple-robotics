@@ -87,8 +87,8 @@ Options
 ``--host-port, -p INTEGER``
     Bind container to specific host port
 
-``--attn, -a TEXT``
-    Attention implementation: ``flash_attention_2``, ``sdpa``, ``eager``
+``--mdl-kwargs, -a STR``
+    Model-specific loading parameters
 
 Examples
 --------
@@ -102,7 +102,7 @@ Examples
    maple serve policy openvla:7b
 
    # Use Flash Attention
-   maple serve policy openvla:7b --attn flash_attention_2
+   maple serve policy openvla:7b --mdl-kwargs '{"attention_implementation" : "flash_attention_2"}'
 
    # Bind to specific port
    maple serve policy openvla:7b --host-port 8080
@@ -119,7 +119,8 @@ Output
      Policy ID: openvla-7b-a1b2c3d4
      Port: http://localhost:50123
      Device: cuda:0
-     Attention: sdpa
+     Parameters :
+        attention_implementation: sdpa
 
 Environment Mode
 ================

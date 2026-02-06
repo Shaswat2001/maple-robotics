@@ -59,7 +59,7 @@ class RunRequest(BaseModel):
     instruction: Optional[str] = None
     max_steps: int = 300
     seed: Optional[int] = None
-    unnorm_key: Optional[str] = None
+    model_kwargs: Optional[Dict[str, Any]] = {}
     save_video: bool = False
     video_dir: Optional[str] = None
 
@@ -72,21 +72,21 @@ class ServePolicyRequest(BaseModel):
     spec: str  # e.g., "openvla:7b"
     device: str = "cpu"
     host_port: Optional[int] = None
-    attn_implementation: str = "sdpa"
+    model_load_kwargs: Optional[Dict[str, Any]] = {}
 
 class ActRequest(BaseModel):
     """Request model for single policy inference."""
     policy_id: str
     image: str  # base64 encoded
     instruction: str
-    unnorm_key: Optional[str] = None
+    model_kwargs: Optional[Dict[str, Any]] = {}
 
 class ActBatchRequest(BaseModel):
     """Request model for batched policy inference."""
     policy_id: str
     image: List[str]  # base64 encoded
     instruction: List[str]
-    unnorm_key: Optional[str] = None
+    model_kwargs: Optional[Dict[str, Any]] = {}
 
 class ServeEnvRequest(BaseModel):
     """Request model for serving environment containers."""
@@ -292,7 +292,7 @@ class VLADaemon:
                         handle=policy_handle,
                         payload=payload,  # base64 encoded, resized by adapter
                         instruction=instruction,
-                        unnorm_key=req.unnorm_key,
+                        model_kwargs=req.model_kwargs,
                     )
                     
                     # Transform action to environment format
@@ -415,6 +415,7 @@ class VLADaemon:
                 version=version,
                 path=str(dst),
                 repo=manifest.get("repo"),
+                image=manifest.get("image")
             )
 
             return {"pulled": f"{name}:{version}", "manifest": manifest}
@@ -491,7 +492,7 @@ class VLADaemon:
                     model_path=model_path,
                     device=req.device,
                     host_port=req.host_port,
-                    attn_implementation=req.attn_implementation
+                    model_load_kwargs=req.model_load_kwargs
                 )
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Failed to load '{policy_id}': {e}")
@@ -525,7 +526,7 @@ class VLADaemon:
                 "policy_id": handle.policy_id,
                 "port": handle.port,
                 "device": handle.device,
-                "attn_implementation": handle.metadata.get("attn_implementation"),
+                "model_load_kwargs": handle.metadata.get("model_load_kwargs"),
             }
         
         @self.app.post("/policy/act")
@@ -553,7 +554,7 @@ class VLADaemon:
                     handle=handle,
                     image=req.image,  # Already base64
                     instruction=req.instruction,
-                    unnorm_key=req.unnorm_key,
+                    model_kwargs=req.model_kwargs,
                 )
 
                 return {"action": action}

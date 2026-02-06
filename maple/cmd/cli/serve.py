@@ -14,12 +14,13 @@ The daemon can run in the foreground (blocking) or be detached to run in
 the background as a separate process.
 """
 
+import json
 import typer 
 import shutil
 import requests
 import subprocess
 from rich import print
-from typing import Optional
+from typing import Optional, Dict, Any
 from maple.utils.config import get_config
 from maple.server.daemon import VLADaemon
 from maple.cmd.cli.misc import daemon_url
@@ -97,7 +98,7 @@ def serve_policy(
     port: int = typer.Option(None, "--port"),
     device: str = typer.Option(None, "--device", "-d"),
     host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port"),
-    attn: str = typer.Option(None, "--attn", "-a", help="Attention: flash_attention_2, sdpa, eager")
+    model_load_kwargs: str = typer.Option(None, "--mdl-kwargs", "-m", help="Model-specific loading parameters")
 ) -> None:
     """
     Serve a policy model in a container.
@@ -110,17 +111,29 @@ def serve_policy(
     :param port: Daemon port number.
     :param device: Device to load policy on (e.g., 'cuda:0', 'cpu').
     :param host_port: Optional specific port to bind the policy container to.
-    :param attn: Attention implementation (flash_attention_2, sdpa, eager).
+    :param model_load_kwargs: Model-specific loading parameters.
     """
     
     config = get_config()
     # Use config defaults for unspecified parameters
     port = port or config.daemon.port
     device = device or config.policy.default_device
-    attn = attn or config.policy.attn_implementation
+    if model_load_kwargs:
+        try:
+            model_load_kwargs = json.loads(model_load_kwargs)
+            if not isinstance(model_load_kwargs, dict):
+                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
+                raise typer.Exit(1)
+        except json.JSONDecodeError as e:
+            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
+            raise typer.Exit(1)
+    else:
+        model_load_kwargs = {}
     
+    model_load_kwargs = model_load_kwargs or config.policy.model_load_kwargs
+
     # Build request payload with policy configuration
-    payload = {"spec": name, "device": device, "attn_implementation": attn}
+    payload = {"spec": name, "device": device, "model_load_kwargs": model_load_kwargs}
     
     # Add optional host port if specified
     if host_port is not None:
@@ -139,7 +152,9 @@ def serve_policy(
     print(f"  Policy ID: {data.get('policy_id')}")
     print(f"  Port: http://localhost:{data.get('port')}")
     print(f"  Device: {data.get('device')}")
-    print(f"  Attention: {data.get('attn_implementation')}")
+    print(f"  Parameters : ")
+    for key, val in model_load_kwargs.items():
+        print(f"    {key} : {val}")
 
 @serve_app.command("env")
 def serve_env(

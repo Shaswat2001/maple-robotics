@@ -179,7 +179,7 @@ class PolicyBackend(ABC):
         handle: PolicyHandle, 
         payload: Any, 
         instruction: str, 
-        unnorm_key: Optional[str] = None
+        model_kwargs: Optional[Dict[str, Any]] = {}
     ) -> List[float]:
         """
         Get action prediction from the policy.
@@ -190,7 +190,7 @@ class PolicyBackend(ABC):
         :param handle: Policy handle for the running container.
         :param payload: Transformed observation from environment (post-adapter).
         :param instruction: Natural language instruction for the task.
-        :param unnorm_key: Optional dataset key for action unnormalization.
+        :param model_kwargs: Model-specific parameters
         :return: Predicted action as list of floats.
         """
         pass
@@ -277,7 +277,7 @@ class PolicyBackend(ABC):
         model_path: Path,
         device: str,
         host_port: Optional[int] = None,
-        attn_implementation: str = "sdpa"
+        model_load_kwargs: Optional[Dict[str, Any]] = {}
     ) -> PolicyHandle:
         """
         Start policy container and load model.
@@ -298,7 +298,7 @@ class PolicyBackend(ABC):
         :param model_path: Filesystem path to model weights.
         :param device: Device to load model on ('cpu', 'cuda:0', etc.).
         :param host_port: Optional specific port to bind (random if None).
-        :param attn_implementation: Attention mechanism ('sdpa', 'flash_attention_2', 'eager').
+        :param model_load_kwargs: Model-specific loading parameters.
         :return: PolicyHandle for the running container.
         """
         # Generate unique policy ID
@@ -307,7 +307,7 @@ class PolicyBackend(ABC):
         log.info(f"Starting policy container: {policy_id}")
         log.debug(f"  Model path: {model_path}")
         log.debug(f"  Device: {device}")
-        log.debug(f"  Attention: {attn_implementation}")
+        log.debug(f"  Load kwargs: {model_load_kwargs}")
         
         # Configure port mapping
         if host_port is not None:
@@ -317,7 +317,7 @@ class PolicyBackend(ABC):
             port_mapping = {f"{self._container_port}/tcp": None}
         
         # Get device-specific container configuration
-        config = self._get_container_config(device, attn_implementation)
+        config = self._get_container_config(device)
         
         container = None
         try:
@@ -369,7 +369,7 @@ class PolicyBackend(ABC):
                 device=device,
                 metadata={
                     "status": "starting",
-                    "attn_implementation": attn_implementation,
+                    "model_load_kwargs": model_load_kwargs,
                 },
             )
             
@@ -378,7 +378,7 @@ class PolicyBackend(ABC):
                 raise RuntimeError(f"Container {policy_id} failed to start within {self._startup_timeout}s")
             
             # Load model into container
-            self._load_model(handle, device, attn_implementation)
+            self._load_model(handle, device, model_load_kwargs)
             
             # Mark as ready
             handle.metadata["status"] = "ready"
@@ -424,7 +424,7 @@ class PolicyBackend(ABC):
             time.sleep(0.5)
         return None
 
-    def _load_model(self, handle: PolicyHandle, device: str, attn_implementation: str) -> None:
+    def _load_model(self, handle: PolicyHandle, device: str, model_load_kwargs: Optional[Dict[str, Any]] = {}) -> None:
         """
         Load model inside the running container.
         
@@ -434,11 +434,14 @@ class PolicyBackend(ABC):
         
         :param handle: Policy handle for the container.
         :param device: Device to load model on.
-        :param attn_implementation: Attention implementation to use.
+        :param model_load_kwargs: Model-specific loading parameters.
         """
         base_url = self._get_base_url(handle)
         
-        log.info(f"Loading model on {device} with {attn_implementation} attention...")
+        log.info(f"Loading model on {device} with...")
+
+        for key, val in model_load_kwargs.items():
+            log.info(f"{key} : {val}")
         
         # Send load request with generous timeout (model loading is slow)
         resp = requests.post(
@@ -446,7 +449,7 @@ class PolicyBackend(ABC):
             json={
                 "model_path": "/models/weights",
                 "device": device,
-                "attn_implementation": attn_implementation,
+                "model_load_kwargs": model_load_kwargs,
             },
             timeout=self._startup_timeout,
         )
@@ -569,6 +572,7 @@ class PolicyBackend(ABC):
         
         return {
             "name": self.name,
+            "image": self._image,
             "version": version,
             "source": "huggingface",
             "repo": repo,
@@ -595,7 +599,7 @@ class PolicyBackend(ABC):
             log.warning(f"Health check failed for {handle.policy_id}: {e}")
             return {"status": "error", "error": str(e)}
 
-    def _get_container_config(self, device: str, attn_implementation: str) -> Dict:
+    def _get_container_config(self, device: str) -> Dict:
         """
         Get container configuration for Docker.
         
@@ -604,7 +608,6 @@ class PolicyBackend(ABC):
         variables for CUDA and attention configuration.
         
         :param device: Device string ('cpu', 'cuda:0', etc.).
-        :param attn_implementation: Attention implementation string.
         :return: Dictionary with environment, device_requests.
         """
         # Parse GPU index from device string
@@ -627,7 +630,6 @@ class PolicyBackend(ABC):
             "environment": {
                 # Set CUDA_VISIBLE_DEVICES to restrict GPU visibility
                 "CUDA_VISIBLE_DEVICES": gpu_idx if device.startswith("cuda") else "",
-                "ATTN_IMPLEMENTATION": attn_implementation,
             },
             "device_requests": device_requests,
         }

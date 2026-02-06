@@ -58,6 +58,7 @@ def remove_policy_cmd(
         print(f"[red]Error:[/red] Policy {name}:{version} not found in database")
         raise typer.Exit(1)
     
+    image_name = policy['image']
     # Get policy path
     weights_path = Path(policy['path'])
     
@@ -66,6 +67,7 @@ def remove_policy_cmd(
     print(f"  Policy: {name}:{version}")
     print(f"  Database entry: Yes")
     print(f"  Weights path: {weights_path}")
+    print(f"  Docker image: {image_name}")
     print(f"  Delete weights: {'No (--keep-weights)' if keep_weights else 'Yes'}")
     
     try:
@@ -109,6 +111,16 @@ def remove_policy_cmd(
             log.error(f"Failed to delete weights: {e}")
     elif not weights_path.exists():
         print(f"[yellow]Warning:[/yellow] Weights path does not exist: {weights_path}")
+
+    try:
+        client = docker.from_env()
+        client.images.remove(image_name, force=True)
+        print(f"[green]✓[/green] Removed Docker image: {image_name}")
+    except docker.errors.ImageNotFound:
+        print(f"[yellow]Warning:[/yellow] Docker image not found: {image_name}")
+    except Exception as e:
+        print(f"[red]Error removing Docker image:[/red] {e}")
+        log.error(f"Failed to remove Docker image: {e}")
     
     print(f"\n[bold green]✓ Policy {name}:{version} removed successfully[/bold green]")
 

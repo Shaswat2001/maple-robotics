@@ -43,6 +43,20 @@ def sync_policies(
     :param dry_run: If True, only show what would be removed without actually removing.
     """
     print("[cyan]Scanning policies...[/cyan]\n")
+
+    # Get Docker client
+    try:
+        client = docker.from_env()
+    except Exception as e:
+        print(f"[red]Error connecting to Docker:[/red] {e}")
+        raise typer.Exit(1)
+    
+    # Get list of all Docker images
+    try:
+        docker_images = {img.tags[0] for img in client.images.list() if img.tags}
+    except Exception as e:
+        print(f"[red]Error listing Docker images:[/red] {e}")
+        raise typer.Exit(1)
     
     policies = list_policies()
     
@@ -56,11 +70,12 @@ def sync_policies(
     for policy in policies:
         name = policy['name']
         version = policy['version']
+        image = policy['image']
         path = Path(policy['path'])
         
-        if not path.exists():
+        if not path.exists() or image not in docker_images:
             missing_policies.append(policy)
-    
+
     if not missing_policies:
         print("[green]✓ All policies in database have weights on disk[/green]")
         return
@@ -70,6 +85,7 @@ def sync_policies(
     
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Name")
+    table.add_column("Image")
     table.add_column("Version")
     table.add_column("Path")
     table.add_column("Status")
@@ -77,6 +93,7 @@ def sync_policies(
     for policy in missing_policies:
         table.add_row(
             policy['name'],
+            policy['image'],
             policy['version'],
             str(policy['path']),
             "[red]Missing[/red]"

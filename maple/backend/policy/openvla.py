@@ -72,7 +72,7 @@ class OpenVLAPolicy(PolicyBackend):
         handle: PolicyHandle, 
         payload: Any, 
         instruction: str,
-        unnorm_key: Optional[str] = None,
+        model_kwargs: Optional[Dict[str, Any]] = {},
     ) -> List[float]:
         """
         Get action prediction for a single observation.
@@ -89,7 +89,7 @@ class OpenVLAPolicy(PolicyBackend):
         :param handle: Policy handle for the running container.
         :param payload: Observation payload containing 'image' key with image data.
         :param instruction: Natural language instruction for the task.
-        :param unnorm_key: Dataset key for action unnormalization (REQUIRED).
+        :param model_kwargs: Model-specific parameters. Must contain 'unnorm_key'. (REQUIRED).
                           Examples: 'libero_spatial', 'bridge', 'fractal'.
         :return: Predicted action as list of floats, unnormalized to target space.
         """
@@ -102,6 +102,7 @@ class OpenVLAPolicy(PolicyBackend):
             "instruction": instruction,
         }
         
+        unnorm_key = model_kwargs.get("unnorm_key", None)
         # Validate unnorm_key is provided (required for OpenVLA)
         if unnorm_key:
             payload["unnorm_key"] = unnorm_key

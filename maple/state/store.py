@@ -90,6 +90,7 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS policies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
+                image TEXT NOT NULL,
                 version TEXT NOT NULL,
                 path TEXT NOT NULL,
                 repo TEXT,
@@ -144,7 +145,7 @@ def init_db() -> None:
         """)
     log.debug("Database initialized")
 
-def add_policy(name: str, version: str, path: str, repo: str = None) -> int:
+def add_policy(name: str, image: str, version: str, path: str, repo: str = None) -> int:
     """
     Add or update a pulled policy.
     
@@ -160,13 +161,13 @@ def add_policy(name: str, version: str, path: str, repo: str = None) -> int:
     """
     with _get_conn() as conn:
         conn.execute("""
-            INSERT INTO policies (name, version, path, repo, pulled_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO policies (name, image, version, path, repo, pulled_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(name, version) DO UPDATE SET
                 path = excluded.path,
                 repo = excluded.repo,
                 pulled_at = excluded.pulled_at
-        """, (name, version, path, repo, time.time()))
+        """, (name, image, version, path, repo, time.time()))
         return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
 def get_policy(name: str, version: str) -> Optional[Dict]:
