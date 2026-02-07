@@ -33,7 +33,10 @@ dependencies = ["typer",
                 "docker",
                 "mediapy>=1.2.4",
                 "imageio",
-                "imageio-ffmpeg"]
+                "imageio-ffmpeg",
+                "fsspec[s3, gcs]",
+                "s3fs",
+                "gcsfs"]
 
 [project.optional-dependencies]
 dev = [
