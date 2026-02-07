@@ -7,7 +7,7 @@ class OpenPILiberoAdapter(Adapter):
     name: str = "openpi:libero"
     env: str = "libero"
     policy: str = "openpi"
-    image_key: Dict[str, str] = {"image":"agentview_image", "wrist_image": "robot0_eye_in_hand_image"}
+    image_key: Dict[str, str] = {"observation/image":"agentview_image", "observation/wrist_image": "robot0_eye_in_hand_image"}
     image_size = (224, 224)
 
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,9 +20,9 @@ class OpenPILiberoAdapter(Adapter):
             image = self.rotate_image(image)
             payload[vla_key] = image
 
-        payload["state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]), 
-                                           self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"])), 
-                                           np.array(raw_obs["robot0_gripper_qpos"])]).tolist()
+        payload["observation/state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]["data"]), 
+                                           self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"])), 
+                                           np.array(raw_obs["robot0_gripper_qpos"]["data"])]).tolist()
                             
         return payload
     

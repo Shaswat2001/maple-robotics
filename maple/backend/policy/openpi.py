@@ -85,12 +85,14 @@ class OpenPIPolicy(PolicyBackend):
         model_kwargs: Optional[Dict[str, Any]] = {},
     ) -> List[float]:
         base_url = self._get_base_url(handle)
-        
+        observations = {}
         for key, value in payload.items():
-            if key in ("prompt", "instruction"):
-                continue
-            payload[key] = self._encode_image(value) if not isinstance(value, str) else value
-        
+            if "image" in key:
+                observations[key] = self._encode_image(value) if not isinstance(value, str) else value
+            else:
+                observations[key] = value
+        payload = {}
+        payload["observations"] = observations
         payload["prompt"] = instruction    
         try:
             resp = requests.post(f"{base_url}/act", json=payload, timeout=300)
