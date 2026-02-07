@@ -53,6 +53,12 @@ Options
 
 ``--video-dir TEXT``
     Directory for videos. Default: ``~/.maple/videos``
+  
+``--model-kwargs, -u STR``
+    Model-specific parameters
+
+``--env-kwargs, -e STR``
+    Env-specific parameters
 
 ``--output, -o PATH``
     Output directory for results. Default: ``~/.maple/results``

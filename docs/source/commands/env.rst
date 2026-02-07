@@ -44,6 +44,9 @@ Options
 ``--port INTEGER``
     Daemon port to connect to (default: from config, typically 8000)
 
+``--env-kwargs, -e STR``
+    Env-specific parameters
+
 Example
 ^^^^^^^
 

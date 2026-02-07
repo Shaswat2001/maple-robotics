@@ -48,6 +48,12 @@ Options
 ``--save-video, -v``
     Save rollout video
 
+``--model-kwargs, -u STR``
+    Model-specific parameters
+
+``--env-kwargs, -e STR``
+    Env-specific parameters
+
 ``--video-path TEXT``
     Custom video output path. Default: ``~/.maple/videos``
 
