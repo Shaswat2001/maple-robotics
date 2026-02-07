@@ -86,7 +86,6 @@ class OpenPIPolicy(PolicyBackend):
     ) -> List[float]:
         base_url = self._get_base_url(handle)
         
-        observations = {}
         for key, value in payload.items():
             if key in ("prompt", "instruction"):
                 continue
@@ -114,6 +113,8 @@ class OpenPIPolicy(PolicyBackend):
             config_name = self._config_names.get(handle.version)
             if not config_name:
                 raise ValueError(f"config_name required for OpenPI")
+            else:
+                model_load_kwargs["config_name"] = config_name
         
         log.info(f"Loading OpenPI model: {config_name} on {device}")
         
@@ -121,7 +122,6 @@ class OpenPIPolicy(PolicyBackend):
             f"{base_url}/load",
             json={
                 "model_path": "/models/weights",
-                "config_name": config_name,
                 "device": device,
                 "model_load_kwargs": model_load_kwargs,
             },
