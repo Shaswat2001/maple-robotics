@@ -87,6 +87,7 @@ class EnvConfig:
     """
     # Default number of environment instances to create when serving
     default_num_envs: int = 1
+    env_kwargs: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class DaemonConfig:

@@ -445,7 +445,7 @@ class EnvBackend(ABC):
             raise RuntimeError(f"Env container error ({resp.status_code}): {detail}")
         return resp.json()
         
-    def setup(self, handle: EnvHandle, task: str, seed: Optional[int] = None) -> Dict:
+    def setup(self, handle: EnvHandle, task: str, seed: Optional[int] = None, env_kwargs: Optional[Dict[str, Any]] = {}) -> Dict:
         """
         Setup environment with a specific task.
         
@@ -456,13 +456,14 @@ class EnvBackend(ABC):
         :param handle: Environment handle to setup.
         :param task: Task specification string.
         :param seed: Optional random seed for task setup.
+        :param env_kwargs: Model-specific parameters.
         :return: Task metadata including instruction and task details.
         """
         base_url = self._get_base_url(handle)
         log.info(f"Setting up env {handle.env_id} with task: {task}")
         
         # Build request payload
-        payload = {"task": task}
+        payload = {"task": task, "env_kwargs": env_kwargs}
         if seed is not None:
             payload["seed"] = seed
         
@@ -474,6 +475,7 @@ class EnvBackend(ABC):
             # Update handle metadata
             handle.metadata["task"] = result.get("task")
             handle.metadata["instruction"] = result.get("instruction")
+            handle.metadata["env_kwargs"] = result.get("env_kwargs")
             handle.metadata["status"] = "setup"
             
             log.debug(f"Env {handle.env_id} setup complete: {result.get('task')}")

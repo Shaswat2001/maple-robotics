@@ -23,7 +23,7 @@ from rich import print
 from typing import Optional, Dict, Any
 from maple.utils.config import get_config
 from maple.server.daemon import VLADaemon
-from maple.utils.misc import daemon_url, parse_error_response
+from maple.utils.misc import daemon_url, parse_error_response, load_kwargs
 
 # Create the serve sub-application
 # no_args_is_help=False allows running without subcommand to start daemon
@@ -118,18 +118,7 @@ def serve_policy(
     # Use config defaults for unspecified parameters
     port = port or config.daemon.port
     device = device or config.policy.default_device
-    if model_load_kwargs:
-        try:
-            model_load_kwargs = json.loads(model_load_kwargs)
-            if not isinstance(model_load_kwargs, dict):
-                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
-                raise typer.Exit(1)
-        except json.JSONDecodeError as e:
-            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
-            raise typer.Exit(1)
-    else:
-        model_load_kwargs = {}
-    
+    model_load_kwargs = load_kwargs(model_load_kwargs)    
     model_load_kwargs = model_load_kwargs or config.policy.model_load_kwargs
 
     # Build request payload with policy configuration

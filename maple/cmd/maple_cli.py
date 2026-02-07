@@ -39,9 +39,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from maple.utils.misc import daemon_url, parse_error_response
 from maple.utils.config import get_config, load_config
 from maple.utils.logging import setup_logging, get_logger
+from maple.utils.misc import daemon_url, parse_error_response, load_kwargs
 from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
 from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app, remove_app, sync_app
 
@@ -96,6 +96,7 @@ def run(
     instruction: Optional[str] = typer.Option(None, "--instruction", "-i", help="Override task instruction"),
     max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
     seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed"),
+    env_kwargs: str = typer.Option(None, "--env-kwargs", "-e", help="Env-specific parameters"),
     model_kwargs: str = typer.Option(None, "--model-kwargs", "-u", help="Model-specific parameters"),
     save_video: bool = typer.Option(False, "--save-video", "-v", help="Save rollout video"),
     video_dir: Optional[str] = typer.Option(None, "--video-path", help="Custom video output path"),
@@ -116,6 +117,7 @@ def run(
     :param instruction: Optional instruction to override default task instruction.
     :param max_steps: Maximum number of steps before truncation.
     :param seed: Random seed for reproducibility.
+    :param env_kwargs: Model-specific parameters.
     :param model_kwargs: Model-specific parameters.
     :param save_video: Whether to record and save episode video.
     :param video_dir: Directory path for saving videos.
@@ -124,18 +126,10 @@ def run(
     """
     config = get_config()
 
-    if model_kwargs:
-        try:
-            model_kwargs = json.loads(model_kwargs)
-            if not isinstance(model_kwargs, dict):
-                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
-                raise typer.Exit(1)
-        except json.JSONDecodeError as e:
-            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
-            raise typer.Exit(1)
-    else:
-        model_kwargs = {}
-    
+    env_kwargs = load_kwargs(env_kwargs)    
+    env_kwargs = env_kwargs or config.env.env_kwargs
+
+    model_kwargs = load_kwargs(model_kwargs)    
     model_kwargs = model_kwargs or config.policy.model_kwargs
 
     # Use config defaults for any unspecified parameters
@@ -159,6 +153,8 @@ def run(
         payload["instruction"] = instruction
     if seed is not None:
         payload["seed"] = seed
+    if env_kwargs:
+        payload["env_kwargs"] = env_kwargs
     if model_kwargs:
         payload["model_kwargs"] = model_kwargs
     if video_dir:
@@ -269,6 +265,7 @@ def eval_cmd(
     seeds: str = typer.Option("0", "--seeds", "-s", help="Seeds (comma-separated, e.g., 0,1,2)"),
     max_steps: int = typer.Option(None, "--max-steps", "-m", help="Maximum steps per episode"),
     timeout: Optional[int] = typer.Option(None, "--timeout", help="Constant multiplied with the max_steps to determine the timeout"),
+    env_kwargs: str = typer.Option(None, "--env-kwargs", "-e", help="Env-specific parameters"),
     model_kwargs: str = typer.Option(None, "--model-kwargs", "-u", help="Model-specific parameters"),
     save_video: bool = typer.Option(None, "--save-video", "-v", help="Save rollout videos"),
     video_dir: Optional[str] = typer.Option(None, "--video-dir", help="Directory for videos"),
@@ -294,6 +291,7 @@ def eval_cmd(
     :param seeds: Comma-separated list of random seeds.
     :param max_steps: Maximum steps per episode.
     :param timeout: Timeout multiplier for each episode request.
+    :param env_kwargs: Model-specific parameters.
     :param model_kwargs: Model-specific parameters.
     :param save_video: Whether to save videos of all episodes.
     :param video_dir: Directory for saving videos.
@@ -312,18 +310,10 @@ def eval_cmd(
     video_dir = video_dir or config.eval.video_dir
     output_dir = Path(output).expanduser() if output else Path(config.eval.results_dir).expanduser()
     
-    if model_kwargs:
-        try:
-            model_kwargs = json.loads(model_kwargs)
-            if not isinstance(model_kwargs, dict):
-                print("[red]Error:[/red] --model-load-kwargs must be a JSON object/dict")
-                raise typer.Exit(1)
-        except json.JSONDecodeError as e:
-            print(f"[red]Error:[/red] Invalid JSON in --model-load-kwargs: {e}")
-            raise typer.Exit(1)
-    else:
-        model_kwargs = {}
-    
+    env_kwargs = load_kwargs(env_kwargs)    
+    env_kwargs = env_kwargs or config.env.env_kwargs
+
+    model_kwargs = load_kwargs(model_kwargs)
     model_kwargs = model_kwargs or config.policy.model_kwargs
     # Parse seeds
     seed_list = [int(s.strip()) for s in seeds.split(",")]
@@ -383,6 +373,7 @@ def eval_cmd(
                 seeds=seed_list,
                 max_steps=max_steps,
                 timeout=timeout,
+                env_kwargs=env_kwargs,
                 model_kwargs=model_kwargs,
                 save_video=save_video,
                 video_dir=video_dir,

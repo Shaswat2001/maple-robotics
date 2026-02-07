@@ -21,7 +21,7 @@ import requests
 from rich import print
 from typing import List, Optional
 from maple.utils.config import get_config
-from maple.utils.misc import daemon_url, parse_error_response
+from maple.utils.misc import daemon_url, parse_error_response, load_kwargs
 
 # Create the env sub-application
 # no_args_is_help=True ensures help is shown when no command is given
@@ -32,7 +32,8 @@ def setup_env(
     env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
     port: int = typer.Option(None, "--port"),
     task: str = typer.Option(None, "--task", "-t", help="Task spec (e.g., libero_10/0)"),
-    seed: int = typer.Option(None, "--seed", "-s")
+    seed: int = typer.Option(None, "--seed", "-s"),
+    env_kwargs: str = typer.Option(None, "--env-kwargs", "-u", help="Env-specific parameters"),
 ) -> None:
     """
     Initialize an environment with a specific task.
@@ -44,11 +45,14 @@ def setup_env(
     :param port: Daemon port number.
     :param env_id: Identifier of the environment container.
     :param task: Task specification string.
+    :param env_kwargs: Model-specific parameters.
     :param seed: Optional random seed for environment initialization.
     """
     config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port
+    env_kwargs = load_kwargs(env_kwargs)
+    env_kwargs = env_kwargs or config.env.env_kwargs
 
     # Validate required parameters
     if env_id is None or task is None:
@@ -56,7 +60,7 @@ def setup_env(
         raise typer.Exit(1)
     
     # Build request payload with required fields
-    payload = {"env_id": env_id, "task": task}
+    payload = {"env_id": env_id, "task": task, "env_kwargs": env_kwargs}
     # Add optional seed if provided
     if seed is not None:
         payload["seed"] = seed

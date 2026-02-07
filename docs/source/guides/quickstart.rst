@@ -32,9 +32,9 @@ Download policy weights from Hugging Face and pull docker image:
 
 .. code-block:: bash
 
-   maple pull policy openvla:latest
+   maple pull policy openpi:pi05_libero
 
-This downloads the OpenVLA 7B model to ``~/.maple/models/``.
+This downloads the OpenPI Libero model to ``~/.maple/models/``.
 
 Step 3: Serve the Policy
 ========================
@@ -43,14 +43,14 @@ Load the policy into a Docker container:
 
 .. code-block:: bash
 
-   maple serve policy openvla:latest
+   maple serve policy openpi:pi05_libero --device cuda:0 --mdl-kwargs '{"config_name": "pi05_libero"}'
 
 Output:
 
 .. code-block:: text
 
-   ✓ Serving policy: openvla:latest
-     Policy ID: openvla-latest-a1b2c3d4
+   ✓ Serving policy: openpi:pi05_libero
+     Policy ID: openpi-pi05_libero-95ac132c
      Port: http://localhost:50123
      Device: cuda:0
 
@@ -88,7 +88,7 @@ Run the policy on a single task:
 
 .. code-block:: bash
 
-   maple run openvla-7b-a1b2c3d4 libero-x1y2z3w4 \
+   maple run openpi-pi05_libero-95ac132c libero-x1y2z3w4 \
        --task libero_10/0 \
        --max-steps 300
 
@@ -111,7 +111,7 @@ Evaluate across multiple tasks and seeds:
 
 .. code-block:: bash
 
-   maple eval openvla-7b-a1b2c3d4 libero-x1y2z3w4 libero \
+   maple eval openpi-pi05_libero-95ac132c libero-x1y2z3w4 libero \
        --tasks libero_10 \
        --seeds 0,1,2 \
        --output results/
@@ -122,7 +122,7 @@ Output:
 
    Batch Evaluation Results: batch-20240131-123456
    ==================================================
-   Policy: openvla-7b-a1b2c3d4
+   Policy: openpi-pi05_libero-95ac132c
    Environment: libero-x1y2z3w4
    Tasks: 10 | Seeds: 3
    
@@ -160,7 +160,7 @@ Output:
    
    Serving:
      Policies:
-       • openvla-7b-a1b2c3d4
+       • openpi-pi05_libero-95ac132c
      Environments:
        • libero-x1y2z3w4
 
@@ -171,7 +171,7 @@ Remove a policy when no longer needed:
 
 .. code-block:: bash
 
-   maple remove policy openvla 7b
+   maple remove policy openpi:pi05_libero
 
 This stops containers, removes database entries, and deletes model weights.
 
@@ -185,7 +185,7 @@ If you manually deleted files, sync the database:
 
 .. code-block:: bash
 
-   # After manual deletion: rm -rf ~/.maple/models/openvla/
+   # After manual deletion: rm -rf ~/.maple/models/openpi/
    maple sync policies
 
 Step 10: Stop Everything
@@ -195,7 +195,7 @@ Stop a specific policy:
 
 .. code-block:: bash
 
-   maple policy stop openvla-7b-a1b2c3d4
+   maple policy stop openpi-pi05_libero-95ac132c
 
 Stop the daemon (cleans up all containers):
 

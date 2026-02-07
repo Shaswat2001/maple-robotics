@@ -347,6 +347,7 @@ class BatchEvaluator:
         seed: int = 0,
         max_steps: int = 300,
         timeout: int = 200,
+        env_kwargs: Optional[Dict[str, Any]] = {},
         model_kwargs: Optional[Dict[str, Any]] = {},
         save_video: bool = False,
         video_path: Optional[str] = None,
@@ -367,6 +368,7 @@ class BatchEvaluator:
         :param seed: Random seed for reproducibility.
         :param max_steps: Maximum steps before truncation.
         :param timeout: Timeout multiplier for HTTP request.
+        :param env_kwargs: Env-specific parameters.
         :param model_kwargs: Model-specific parameters.
         :param save_video: Whether to record video.
         :param video_path: Optional path for video output.
@@ -399,6 +401,7 @@ class BatchEvaluator:
                     "instruction": instruction,
                     "max_steps": max_steps,
                     "seed": seed,
+                    "env_kwargs": env_kwargs,
                     "model_kwargs": model_kwargs,
                     "save_video": save_video,
                     "video_path": video_path,
@@ -456,6 +459,7 @@ class BatchEvaluator:
         seeds: List[int] = None,
         max_steps: int = 300,
         timeout: int = 200,
+        env_kwargs: Optional[Dict[str, Any]] = {},
         model_kwargs: Optional[Dict[str, Any]] = {},
         save_video: bool = False,
         video_dir: Optional[str] = None,
@@ -479,6 +483,7 @@ class BatchEvaluator:
         :param seeds: List of random seeds (default: [0]).
         :param max_steps: Maximum steps per episode.
         :param timeout: Timeout multiplier for HTTP requests.
+        :param env_kwargs: Env-specific parameters.
         :param model_kwargs: Model-specific parameters.
         :param save_video: Whether to record videos.
         :param video_dir: Directory for video files.
@@ -523,6 +528,7 @@ class BatchEvaluator:
                     "task": task,
                     "seed": seed,
                     "max_steps": max_steps,
+                    "env_kwargs": env_kwargs,
                     "model_kwargs": model_kwargs,
                     "save_video": save_video,
                     "video_path": video_path,

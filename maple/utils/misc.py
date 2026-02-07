@@ -8,10 +8,13 @@ shorthand specifications.
 Key utilities:
 - daemon_url: Construct daemon endpoint URLs
 - parse_policy_env: Parse policy@env shorthand notation
+- parse_error_response: Parse response JSON in case of error
+- load_kwargs: Load string kwargs properly into dict
 """
 
+import json
 import typer 
-from typing import Tuple
+from typing import Tuple, Dict
 
 def daemon_url(port: int):
     """
@@ -54,7 +57,7 @@ def parse_policy_env(spec: str) -> Tuple[str, str]:
     
     return policy, env
 
-def parse_error_response(resp):
+def parse_error_response(resp) -> str:
     """Parse error response, handling JSON, XML, and plain text."""
     # Try JSON first
     try:
@@ -94,3 +97,20 @@ def parse_error_response(resp):
     
     # Fallback: clean up raw text
     return text.strip()[:500]  # Truncate long responses
+
+def load_kwargs(kwargs: str) -> Dict:
+    """Helper function to load string kwargs to a dictionary"""
+
+    if kwargs:
+        try:
+            kwargs = json.loads(kwargs)
+            if not isinstance(kwargs, dict):
+                print(f"[red]Error:[/red] {kwargs} must be a JSON object/dict")
+                raise typer.Exit(1)
+        except json.JSONDecodeError as e:
+            print(f"[red]Error:[/red] Invalid JSON: {e}")
+            raise typer.Exit(1)
+    else:
+        kwargs = {}
+
+    return kwargs

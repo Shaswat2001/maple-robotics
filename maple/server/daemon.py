@@ -60,6 +60,7 @@ class RunRequest(BaseModel):
     max_steps: int = 300
     seed: Optional[int] = None
     model_kwargs: Optional[Dict[str, Any]] = {}
+    env_kwargs: Optional[Dict[str, Any]] = {}
     save_video: bool = False
     video_dir: Optional[str] = None
 
@@ -92,12 +93,14 @@ class ServeEnvRequest(BaseModel):
     """Request model for serving environment containers."""
     name: str
     num_envs: int = 1
+    host_port: Optional[int] = None
 
 class SetupEnvRequest(BaseModel):
     """Request model for setting up an environment with a task."""
     env_id: str
     task: str
     seed: Optional[int] = None
+    env_kwargs: Optional[Dict[str, Any]] = {}
 
 class ResetEnvRequest(BaseModel):
     """Request model for resetting an environment."""
@@ -259,7 +262,8 @@ class VLADaemon:
                 setup_result = env_backend.setup(
                     handle=env_handle,
                     task=req.task,
-                    seed=req.seed
+                    seed=req.seed,
+                    env_kwargs=req.env_kwargs
                 )
 
                 # Get instruction from request or task default
@@ -640,8 +644,9 @@ class VLADaemon:
             :return: Dictionary with serving confirmation and container details.
             """
             name = req.name
+            host_port = req.host_port
             num_envs = req.num_envs
-            
+
             # Validate environment was pulled
             if not store.get_env(name):
                 raise HTTPException(
@@ -662,7 +667,8 @@ class VLADaemon:
             
             # Serve environments (can create multiple instances)
             try:
-                handles = backend.serve(num_envs)
+                handles = backend.serve(num_envs= num_envs,
+                                        host_port= host_port)
             except Exception as e:
                 raise HTTPException(
                     status_code=500,
@@ -724,7 +730,7 @@ class VLADaemon:
             
             # Setup task
             try:
-                result = backend.setup(handle, task=req.task, seed=req.seed)
+                result = backend.setup(handle, task=req.task, seed=req.seed, env_kwargs= req.env_kwargs)
                 return result
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
