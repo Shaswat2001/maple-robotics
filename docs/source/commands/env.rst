@@ -115,7 +115,7 @@ Arguments
 Options
 ^^^^^^^
 
-``--action, -a LIST[FLOAT]`` (required)
+``--action, -a STR`` (required)
     Action values (specify list of values)
 
 ``--port INTEGER``

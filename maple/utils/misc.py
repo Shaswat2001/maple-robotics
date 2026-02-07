@@ -53,3 +53,44 @@ def parse_policy_env(spec: str) -> Tuple[str, str]:
         raise typer.BadParameter("Invalid POLICY@ENV")
     
     return policy, env
+
+def parse_error_response(resp):
+    """Parse error response, handling JSON, XML, and plain text."""
+    # Try JSON first
+    try:
+        data = resp.json()
+        if isinstance(data, dict):
+            return data.get("detail") or data.get("error") or data.get("message") or str(data)
+        return str(data)
+    except Exception:
+        pass
+    
+    text = resp.text
+    
+    # Try XML parsing
+    if text.strip().startswith("<?xml") or text.strip().startswith("<"):
+        try:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(text)
+            
+            # Common XML error fields
+            for tag in ["Message", "message", "Detail", "detail", "Error", "error"]:
+                elem = root.find(f".//{tag}")
+                if elem is not None and elem.text:
+                    return elem.text
+            
+            # Try to get Code + Message combo
+            code = root.findtext(".//Code") or root.findtext(".//code")
+            msg = root.findtext(".//Message") or root.findtext(".//message")
+            if code and msg:
+                return f"{code}: {msg}"
+            if msg:
+                return msg
+            if code:
+                return code
+                
+        except ET.ParseError:
+            pass
+    
+    # Fallback: clean up raw text
+    return text.strip()[:500]  # Truncate long responses

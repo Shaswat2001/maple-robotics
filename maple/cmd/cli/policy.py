@@ -13,7 +13,7 @@ import typer
 import requests
 from rich import print
 from maple.utils.config import get_config
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url, parse_error_response
 
 # Create the policy sub-application
 # no_args_is_help=True ensures help is shown when no command is given
@@ -42,7 +42,7 @@ def policy_info(
     r = requests.get(f"{daemon_url(port)}/policy/info/{policy_id}")
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display policy metadata
@@ -79,10 +79,10 @@ def stop_policy(
     
     # Send stop request to daemon
     # Note: Uses env/stop endpoint (likely should be policy/stop)
-    r = requests.post(f"{daemon_url(port)}/env/stop/{policy_id}", params={"env_id": policy_id})
+    r = requests.post(f"{daemon_url(port)}/policy/stop/{policy_id}", params={"env_id": policy_id})
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json()['detail']}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Confirm successful stop

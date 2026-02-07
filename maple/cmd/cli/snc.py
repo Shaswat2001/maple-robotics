@@ -81,7 +81,7 @@ def sync_policies(
         return
     
     # Display missing policies
-    print(f"[yellow]Found {len(missing_policies)} policies with missing weights:[/yellow]\n")
+    print(f"[yellow]Found {len(missing_policies)} policies with missing weights/image:[/yellow]\n")
     
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Name")

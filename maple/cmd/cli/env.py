@@ -15,12 +15,13 @@ Commands:
 - stop: Stop one or all environment containers
 """
 
+import json
 import typer 
 import requests
 from rich import print
 from typing import List, Optional
 from maple.utils.config import get_config
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url, parse_error_response
 
 # Create the env sub-application
 # no_args_is_help=True ensures help is shown when no command is given
@@ -63,7 +64,7 @@ def setup_env(
     # Send setup request to daemon
     r = requests.post(f"{daemon_url(port)}/env/setup", json=payload)
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display setup confirmation with task details
@@ -106,7 +107,7 @@ def reset_env(
     # Send reset request to daemon
     r = requests.post(f"{daemon_url(port)}/env/reset", json=payload)
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display reset confirmation with observation info
@@ -120,7 +121,7 @@ def reset_env(
 @env_app.command("step")
 def step_env(
     env_id: str = typer.Argument(..., help="Environment ID (e.g., libero-x1y2z3w4)"),
-    action: List[float] = typer.Option(..., "--action", "-a", help="Action values"),
+    action: str = typer.Option(..., "--action", "-a", help="Action values as JSON array"),
     port: int = typer.Option(None, "--port")
 ) -> None:
     """
@@ -131,7 +132,7 @@ def step_env(
     through episodes or testing environment responses.
     
     :param env_id: Identifier of the environment container.
-    :param action: List of action values to execute.
+    :param action: JSON array string of action values to execute.
     :param port: Daemon port number.
     """
     config = get_config()
@@ -143,6 +144,15 @@ def step_env(
         print(f"[red]Error: environment id is None[/red]")
         raise typer.Exit(1)
     
+    try:
+        action = json.loads(action)
+        if not isinstance(action, list):
+            print(f"[red]Error: action must be a JSON array[/red]")
+            raise typer.Exit(1)
+    except json.JSONDecodeError as e:
+        print(f"[red]Error parsing action JSON: {e}[/red]")
+        raise typer.Exit(1)
+    
     # Send step request with action to daemon
     # Convert action to list to ensure proper JSON serialization
     r = requests.post(
@@ -151,7 +161,7 @@ def step_env(
     )
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display step results
@@ -183,7 +193,7 @@ def env_info(
     r = requests.get(f"{daemon_url(port)}/env/info/{env_id}")
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display environment metadata
@@ -227,7 +237,7 @@ def env_tasks(
     r = requests.get(f"{daemon_url(port)}/env/tasks/{backend}", params=params)
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     data = r.json()
@@ -282,7 +292,7 @@ def stop_env(
         r = requests.post(f"{daemon_url(port)}/env/stop")
         
         if r.status_code != 200:
-            print(f"[red]Error:[/red] {r.json()['detail']}")
+            print(f"[red]Error:[/red] {parse_error_response(r)}")
             raise typer.Exit(1)
         
         print("[green]All env stopped[/green]")
@@ -291,7 +301,7 @@ def stop_env(
         r = requests.post(f"{daemon_url(port)}/env/stop/{env_id}", params={"env_id": env_id})
 
         if r.status_code != 200:
-            print(f"[red]Error:[/red] {r.json()['detail']}")
+            print(f"[red]Error:[/red] {parse_error_response(r)}")
             raise typer.Exit(1)
         
         print(f"[green]Env {env_id} stopped[/green]")

@@ -23,7 +23,7 @@ from rich import print
 from typing import Optional, Dict, Any
 from maple.utils.config import get_config
 from maple.server.daemon import VLADaemon
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url, parse_error_response
 
 # Create the serve sub-application
 # no_args_is_help=False allows running without subcommand to start daemon
@@ -143,7 +143,7 @@ def serve_policy(
     r = requests.post(f"{daemon_url(port)}/policy/serve", json=payload)
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json()['detail']}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display serving confirmation with container details
@@ -194,9 +194,9 @@ def serve_env(
         f"{daemon_url(port)}/env/serve",
         json=payload
     )
-    
+
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Display serving confirmation with environment IDs

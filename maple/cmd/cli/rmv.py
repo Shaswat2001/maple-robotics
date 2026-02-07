@@ -21,7 +21,7 @@ from pathlib import Path
 
 from maple.utils.config import get_config
 from maple.utils.logging import get_logger
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url
 from maple.utils.spec import parse_versioned
 from maple.state.store import remove_policy, remove_env, get_policy, get_env
 

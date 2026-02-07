@@ -14,7 +14,7 @@ import typer
 import requests
 from rich import print
 from maple.utils.config import get_config
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url
 
 # Create the list sub-application
 # no_args_is_help=True ensures help is shown when no command is given

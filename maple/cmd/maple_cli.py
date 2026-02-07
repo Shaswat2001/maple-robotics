@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url, parse_error_response
 from maple.utils.config import get_config, load_config
 from maple.utils.logging import setup_logging, get_logger
 from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
@@ -188,7 +188,7 @@ def run(
 
     # Check for HTTP errors
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json().get('detail', 'Unknown error')}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
 
     result = r.json()

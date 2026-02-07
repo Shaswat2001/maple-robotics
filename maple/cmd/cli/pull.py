@@ -14,7 +14,7 @@ import typer
 import requests
 from rich import print
 from maple.utils.config import get_config
-from maple.cmd.cli.misc import daemon_url
+from maple.utils.misc import daemon_url, parse_error_response
 
 # Create the pull sub-application
 # no_args_is_help=True ensures help is shown when no command is given
@@ -43,7 +43,7 @@ def pull_policy(
     r = requests.post(f"{daemon_url(port)}/policy/pull", json={"spec": name})
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json()['detail']}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Confirm successful pull
@@ -73,7 +73,7 @@ def pull_env(
     r = requests.post(f"{daemon_url(port)}/env/pull", params={"name": name})
     
     if r.status_code != 200:
-        print(f"[red]Error:[/red] {r.json()['detail']}")
+        print(f"[red]Error:[/red] {parse_error_response(r)}")
         raise typer.Exit(1)
     
     # Confirm successful pull
