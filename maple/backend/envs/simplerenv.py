@@ -1,0 +1,118 @@
+"""
+SimplerEnv environment backend.
+
+This module implements the environment backend for SimplerEnv (Bridge + Fractal Sim), 
+a suite of robotic manipulation tasks with natural language instructions.
+
+SimplerEnv provides multiple task suites:
+- bridge: 4 task with the WidowX robot
+- fractal: 16 task with the Google Robot
+
+The backend handles Docker container management and provides task enumeration
+both statically (when no container is running) and dynamically (by querying
+a running container for detailed task information).
+"""
+
+import requests
+from typing import Optional
+
+from maple.backend.envs.base import EnvBackend
+from maple.utils.logging import get_logger
+
+log = get_logger("env.simplerenv")
+
+class SimplerEnvBackend(EnvBackend):
+    """
+    Backend for LIBERO manipulation environments.
+    
+    Manages LIBERO environment containers with MuJoCo physics simulation
+    using OSMesa for headless rendering. Provides access to multiple task
+    suites with language-conditioned manipulation tasks.
+    
+    The backend uses the maplerobotics/simplerenv:latest Docker image which
+    includes LIBERO, MuJoCo, and all necessary dependencies pre-configured.
+    """
+    
+    name = "simplerenv"
+    _image = "maplerobotics/simplerenv:latest"
+    _container_port: int = 8000
+    _startup_timeout: int = 120
+    _health_check_interval: int = 2
+    _memory_limit: str = "4g"
+
+    def _get_container_config(self) -> dict:
+        """
+        Get SimplerEnv-specific container configuration.
+        
+        Configures the container with:
+        - MUJOCO_GL=osmesa: Use OSMesa for headless rendering (no GPU required)
+        - No volume mounts: All assets included in image
+        - No device requests: CPU-only rendering
+        
+        :return: Dictionary with environment variables, volumes, and device requests.
+        """
+        return {
+            "environment": {
+                # Use OSMesa for software rendering (headless, no display needed)
+                "MUJOCO_GL": "egl",
+                "PYOPENGL_PLATFORM": "egl",
+                "SAPIEN_DISABLE_VULKAN_RAY_TRACING": 1,
+                "SAPIEN_DISABLE_VULKAN_RAY_QUERY": 1
+            },
+            "volumes": {},
+            "device_requests": [],
+        }
+
+    def list_tasks(self, suite: Optional[str] = None) -> dict:
+        """
+        List available SimplerEnv tasks.
+        
+        Returns task information in two modes:
+        1. Dynamic mode (if container running): Queries container for detailed
+           task list including task names, indices, and instructions.
+        2. Static mode (no container): Returns suite descriptions with counts.
+        
+        The dynamic mode provides complete task details by querying a running
+        container's /tasks endpoint, which returns the full task registry.
+        
+        :param suite: Optional suite name to filter results (e.g., 'bridge').
+        
+        :return: Dictionary mapping suite names to task information. In dynamic
+                mode, each suite maps to a list of task dicts with 'index',
+                'name', and 'instruction'. In static mode, suites map to
+                description dicts with 'description' and 'count'.
+        """
+        # If we have an active container, use it for dynamic task listing
+        if self._active_handles:
+            # Get any active handle to query
+            handle = next(iter(self._active_handles.values()))
+            base_url = self._get_base_url(handle)
+            
+            try:
+                # Build query parameters
+                params = {}
+                if suite:
+                    params["suite"] = suite
+                
+                # Query container for task list
+                resp = requests.get(f"{base_url}/tasks", params=params, timeout=30)
+                resp.raise_for_status()
+                return resp.json()
+                
+            except requests.exceptions.RequestException:
+                # Container query failed, fall back to static info
+                pass
+        
+        # Fallback: return static task suite information
+        # This is returned when no container is running or query fails
+        return {
+            "bridge": {
+                "description": "4 task with the WidowX robot",
+                "count": 4
+            },
+            "fractal": {
+                "description": "16 task with the Google Robot",
+                "count": 16
+            },
+            "_note": "Start an env to get full task listings with instructions",
+        }
