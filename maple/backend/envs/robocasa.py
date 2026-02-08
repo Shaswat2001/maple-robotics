@@ -1,16 +1,8 @@
 """
-LIBERO environment backend.
+RoboCasa environment backend.
 
-This module implements the environment backend for LIBERO (Language-Instructed
-Benchmarks for Embodied Robot Learning), a suite of robotic manipulation tasks
-with natural language instructions.
-
-LIBERO provides multiple task suites:
-- libero_spatial: 10 spatial reasoning tasks
-- libero_object: 10 object manipulation tasks
-- libero_goal: 10 goal-conditioned tasks
-- libero_10: 10 diverse benchmark tasks
-- libero_90: 90 diverse tasks for large-scale evaluation
+This module implements the environment backend for RoboCasa, a 
+large-scale simulation framework for training generally capable robots to perform everyday tasks.
 
 The backend handles Docker container management and provides task enumeration
 both statically (when no container is running) and dynamically (by querying
@@ -23,22 +15,22 @@ from typing import Optional
 from maple.backend.envs.base import EnvBackend
 from maple.utils.logging import get_logger
 
-log = get_logger("env.libero")
+log = get_logger("env.robocasa")
 
-class LiberoEnvBackend(EnvBackend):
+class RoboCasaEnvBackend(EnvBackend):
     """
-    Backend for LIBERO manipulation environments.
+    Backend for RoboCasa manipulation environments.
     
-    Manages LIBERO environment containers with MuJoCo physics simulation
+    Manages RoboCasa environment containers with MuJoCo physics simulation
     using OSMesa for headless rendering. Provides access to multiple task
     suites with language-conditioned manipulation tasks.
     
-    The backend uses the maplerobotics/libero:latest Docker image which
-    includes LIBERO, MuJoCo, and all necessary dependencies pre-configured.
+    The backend uses the maplerobotics/robocasa:latest Docker image which
+    includes RoboCasa, MuJoCo, and all necessary dependencies pre-configured.
     """
     
-    name = "libero"
-    _image = "maplerobotics/libero:latest"
+    name = "robocasa"
+    _image = "maplerobotics/robocasa:latest"
     _container_port: int = 8000
     _startup_timeout: int = 120
     _health_check_interval: int = 2
@@ -46,7 +38,7 @@ class LiberoEnvBackend(EnvBackend):
 
     def _get_container_config(self) -> dict:
         """
-        Get LIBERO-specific container configuration.
+        Get RoboCasa-specific container configuration.
         
         Configures the container with:
         - MUJOCO_GL=osmesa: Use OSMesa for headless rendering (no GPU required)
@@ -76,7 +68,7 @@ class LiberoEnvBackend(EnvBackend):
         The dynamic mode provides complete task details by querying a running
         container's /tasks endpoint, which returns the full task registry.
         
-        :param suite: Optional suite name to filter results (e.g., 'libero_10').
+        :param suite: Optional suite name to filter results (e.g., 'atomic').
         
         :return: Dictionary mapping suite names to task information. In dynamic
                 mode, each suite maps to a list of task dicts with 'index',
@@ -93,7 +85,7 @@ class LiberoEnvBackend(EnvBackend):
                 # Build query parameters
                 params = {}
                 if suite:
-                    params["suite"] = suite
+                    params["category"] = suite
                 
                 # Query container for task list
                 resp = requests.get(f"{base_url}/tasks", params=params, timeout=30)
@@ -107,25 +99,13 @@ class LiberoEnvBackend(EnvBackend):
         # Fallback: return static task suite information
         # This is returned when no container is running or query fails
         return {
-            "libero_spatial": {
-                "description": "10 spatial reasoning tasks",
-                "count": 10
+            "atomic": {
+                "description": "Low-level, single-step primitive operations that cannot be decomposed further",
+                "count": 25
             },
-            "libero_object": {
-                "description": "10 object manipulation tasks",
-                "count": 10
-            },
-            "libero_goal": {
-                "description": "10 goal-conditioned tasks",
-                "count": 10
-            },
-            "libero_10": {
-                "description": "10 diverse tasks",
-                "count": 10
-            },
-            "libero_90": {
-                "description": "90 diverse tasks",
-                "count": 90
+            "composite": {
+                "description": "High-level, multi-step behaviors composed of multiple atomic actions executed in a structured sequence to achieve a goal",
+                "count": 97
             },
             "_note": "Start an env to get full task listings with instructions",
         }
