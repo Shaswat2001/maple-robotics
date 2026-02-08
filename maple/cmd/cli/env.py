@@ -213,7 +213,7 @@ def env_info(
 
 @env_app.command("tasks")
 def env_tasks(
-    backend: str = typer.Argument("libero", help="Environment backend name"),
+    backend: str = typer.Argument(None, help="Environment backend name"),
     suite: Optional[str] = typer.Option(None, "--suite", "-s", help="Filter by suite"),
     port: int = typer.Option(None, "--port")
 ) -> None:
@@ -228,6 +228,11 @@ def env_tasks(
     :param suite: Optional suite name to filter results.
     :param port: Daemon port number.
     """
+
+    if backend is None:
+        print(f"[red]Backend cannot be None, specify a backend (e.g libero, simplerenv etc):[/red] {e}")
+        raise typer.Exit(1)
+    
     config = get_config()
     # Use config default if port not specified
     port = port or config.daemon.port

@@ -1,12 +1,13 @@
 """
-SimplerEnv environment backend.
+AlohaSim environment backend.
 
-This module implements the environment backend for SimplerEnv (Bridge + Fractal Sim), 
-a suite of robotic manipulation tasks with natural language instructions.
+This module implements the environment backend for AlohaSim, 
+a suite of sim environment for the Aloha robot. It includes a collection of tasks for robot learning and evaluation.
 
-SimplerEnv provides multiple task suites:
-- bridge: 4 task with the WidowX robot
-- fractal: 16 task with the Google Robot
+AlohaSim provides multiple task suites:
+- basic: 5 basic manipulation tasks
+- instruction: 12 tasks in which instructions are followed
+- dexterous: 3 dexterous tasks
 
 The backend handles Docker container management and provides task enumeration
 both statically (when no container is running) and dynamically (by querying
@@ -19,22 +20,22 @@ from typing import Optional
 from maple.backend.envs.base import EnvBackend
 from maple.utils.logging import get_logger
 
-log = get_logger("env.simplerenv")
+log = get_logger("env.alohasim")
 
-class SimplerEnvBackend(EnvBackend):
+class AlohaSimBackend(EnvBackend):
     """
-    Backend for SimplerEnv manipulation environments.
+    Backend for AlohaSim manipulation environments.
     
-    Manages SimplerEnv environment containers with MuJoCo physics simulation
+    Manages AlohaSim environment containers with MuJoCo physics simulation
     using EGL for headless rendering. Provides access to multiple task
     suites with language-conditioned manipulation tasks.
     
-    The backend uses the maplerobotics/simplerenv:latest Docker image which
-    includes SimplerEnv, and all necessary dependencies pre-configured.
+    The backend uses the maplerobotics/alohasim:latest Docker image which
+    includes AlohaSim, MuJoCo, and all necessary dependencies pre-configured.
     """
     
-    name = "simplerenv"
-    _image = "maplerobotics/simplerenv:latest"
+    name = "alohasim"
+    _image = "maplerobotics/alohasim:latest"
     _container_port: int = 8000
     _startup_timeout: int = 120
     _health_check_interval: int = 2
@@ -42,7 +43,7 @@ class SimplerEnvBackend(EnvBackend):
 
     def _get_container_config(self, device: str) -> dict:
         """
-        Get SimplerEnv-specific container configuration.
+        Get AlohaSim-specific container configuration.
 
         :param device: Device string ('cpu', 'cuda:0', etc.).
         :return: Dictionary with environment variables, volumes, and device requests.
@@ -50,14 +51,12 @@ class SimplerEnvBackend(EnvBackend):
         config = super()._get_container_config(device)
         config["environment"]["MUJOCO_GL"] = "egl"
         config["environment"]["PYOPENGL_PLATFORM"] = "egl"
-        config["environment"]["SAPIEN_DISABLE_VULKAN_RAY_TRACING"] = 1
-        config["environment"]["SAPIEN_DISABLE_VULKAN_RAY_QUERY"] = 1
         
         return config
 
     def list_tasks(self, suite: Optional[str] = None) -> dict:
         """
-        List available SimplerEnv tasks.
+        List available AlohaSim tasks.
         
         Returns task information in two modes:
         1. Dynamic mode (if container running): Queries container for detailed
@@ -67,7 +66,7 @@ class SimplerEnvBackend(EnvBackend):
         The dynamic mode provides complete task details by querying a running
         container's /tasks endpoint, which returns the full task registry.
         
-        :param suite: Optional suite name to filter results (e.g., 'bridge').
+        :param suite: Optional suite name to filter results (e.g., 'basic').
         
         :return: Dictionary mapping suite names to task information. In dynamic
                 mode, each suite maps to a list of task dicts with 'index',
@@ -98,13 +97,17 @@ class SimplerEnvBackend(EnvBackend):
         # Fallback: return static task suite information
         # This is returned when no container is running or query fails
         return {
-            "bridge": {
-                "description": "Tasks with the WidowX robot",
-                "count": 4
+            "basic": {
+                "description": "Basic manipulation tasks",
+                "count": 5
             },
-            "fractal": {
-                "description": "Tasks with the Google Robot",
-                "count": 16
+            "instruction": {
+                "description": "Tasks in which instructions are followed",
+                "count": 12
+            },
+            "dexterous": {
+                "description": "Complex dexterous tasks",
+                "count": 3
             },
             "_note": "Start an env to get full task listings with instructions",
         }
