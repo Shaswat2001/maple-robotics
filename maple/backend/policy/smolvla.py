@@ -7,7 +7,8 @@ log = get_logger("policy.smolvla")
 
 class SmolVLAPolicy(PolicyBackend):
     name = "smolvla"
-    _image = "shaswatai/robotics_vla:smolvla"
+    _image = "maplerobotics/smolvla:latest"
+    
     _hf_repos = {
         "libero": "HuggingFaceVLA/smolvla_libero",
         "base": "lerobot/smolvla_base"

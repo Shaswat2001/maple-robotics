@@ -20,9 +20,9 @@ class SmolVLALiberoAdapter(Adapter):
             image = self.rotate_image(image)
             payload[vla_key] = image
 
-        payload["state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]), 
-                                           self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"])), 
-                                           np.array(raw_obs["robot0_gripper_qpos"])]).tolist()
+        payload["state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]["data"]), 
+                                           self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"])), 
+                                           np.array(raw_obs["robot0_gripper_qpos"]["data"])]).tolist()
                             
         return payload
     
