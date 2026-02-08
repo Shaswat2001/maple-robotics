@@ -111,7 +111,7 @@ class RunConfig:
     # Whether to record and save episode videos by default
     save_video: bool = False
     # Directory for saving episode videos
-    video_dir: str = "~/.maple/videos"
+    video_dir: Optional[str] = None
 
 @dataclass  
 class EvalConfig:
