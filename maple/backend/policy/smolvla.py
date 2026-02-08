@@ -114,7 +114,7 @@ class SmolVLAPolicy(PolicyBackend):
             resp.raise_for_status()
             
             # Extract action from response
-            return resp.json()["action"]
+            return resp.json()
             
         except requests.exceptions.RequestException as e:
             log.error(f"Failed to connect to policy container: {e}")
