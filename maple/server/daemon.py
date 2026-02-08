@@ -21,6 +21,7 @@ Key components:
 - Signal handling for graceful shutdown
 """
 
+import os
 import sys
 import uuid
 import time
@@ -323,16 +324,19 @@ class VLADaemon:
                     try:                        
                         # Determine output path
                         if req.video_dir:
+                            output_dir = req.video_dir
                             output_path = Path(req.video_dir) / f"{run_id}.mp4"
                         else:
-                            output_path = Path.home() / ".maple" / "videos" / f"{run_id}.mp4"
-                        
+                            home_dir = os.path.expanduser("~")
+                            output_dir = os.path.join(home_dir, ".maple", "videos")
+                            output_path = os.path.join(output_dir, f"{run_id}.mp4")
+
                         # Create directory if it doesn't exist
-                        output_path.parent.mkdir(parents=True, exist_ok=True)
-                        
+                        os.makedirs(output_dir, exist_ok=True)
+
                         # Write video at 15 fps
                         mediapy.write_video(output_path, frames, fps=15)
-                        video_saved_path = str(output_path)
+                        video_saved_path = output_path
 
                     except Exception as video_err:
                         log.warning(f"Failed to save video: {video_err}")
