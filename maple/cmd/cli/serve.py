@@ -149,6 +149,7 @@ def serve_policy(
 def serve_env(
     name: str = typer.Argument(..., help="name (e.g., libero)"),
     port: int = typer.Option(None, "--port"),
+    device: str = typer.Option(None, "--device", "-d"),
     num_envs: int = typer.Option(None, "--num-envs", min=1),
     host_port: Optional[int] = typer.Option(None, "--host-port", "-p", help="Bind to specific port (only with num_envs=1)")
 ) -> None:
@@ -161,17 +162,19 @@ def serve_env(
     
     :param name: Environment name or image specification.
     :param port: Daemon port number.
+    :param device: Device to load env on (e.g., 'cuda:0', 'cpu').
     :param num_envs: Number of environment instances to create.
     :param host_port: Optional specific port (only valid when num_envs=1).
     """
 
     config = get_config()
     # Use config defaults for unspecified parameters
+    device = device or config.policy.default_device
     port = port or config.daemon.port
     num_envs = num_envs if num_envs is not None else config.env.default_num_envs
     
     # Build request payload with environment configuration
-    payload = {"name": name, "num_envs": num_envs}
+    payload = {"name": name, "num_envs": num_envs, "device": device}
     
     # Add optional host port if specified
     # Note: Only valid when num_envs=1

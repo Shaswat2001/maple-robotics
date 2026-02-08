@@ -40,28 +40,20 @@ class SimplerEnvBackend(EnvBackend):
     _health_check_interval: int = 2
     _memory_limit: str = "4g"
 
-    def _get_container_config(self) -> dict:
+    def _get_container_config(self, device: str) -> dict:
         """
         Get SimplerEnv-specific container configuration.
-        
-        Configures the container with:
-        - MUJOCO_GL=osmesa: Use OSMesa for headless rendering (no GPU required)
-        - No volume mounts: All assets included in image
-        - No device requests: CPU-only rendering
-        
+
+        :param device: Device string ('cpu', 'cuda:0', etc.).
         :return: Dictionary with environment variables, volumes, and device requests.
         """
-        return {
-            "environment": {
-                # Use OSMesa for software rendering (headless, no display needed)
-                "MUJOCO_GL": "egl",
-                "PYOPENGL_PLATFORM": "egl",
-                "SAPIEN_DISABLE_VULKAN_RAY_TRACING": 1,
-                "SAPIEN_DISABLE_VULKAN_RAY_QUERY": 1
-            },
-            "volumes": {},
-            "device_requests": [],
-        }
+        config = super()._get_container_config(device)
+        config["environment"]["MUJOCO_GL"] = "egl"
+        config["environment"]["PYOPENGL_PLATFORM"] = "egl"
+        config["environment"]["SAPIEN_DISABLE_VULKAN_RAY_TRACING"] = 1
+        config["environment"]["SAPIEN_DISABLE_VULKAN_RAY_QUERY"] = 1
+        
+        return config
 
     def list_tasks(self, suite: Optional[str] = None) -> dict:
         """

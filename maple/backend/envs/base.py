@@ -243,7 +243,7 @@ class EnvBackend(ABC):
                 f"Build it with: docker build -t {self._image} docker/libero/"
             )
     
-    def serve(self, num_envs: int = 1, host_port: Optional[int] = None) -> List[EnvHandle]:
+    def serve(self, num_envs: int = 1, device: str= "cpu", host_port: Optional[int] = None) -> List[EnvHandle]:
         """
         Start environment container(s).
         
@@ -262,7 +262,8 @@ class EnvBackend(ABC):
             raise ValueError("host_port can only be specified when num_envs=1")
         
         log.info(f"Starting {num_envs} {self.name} environment(s)...")
-        
+        log.debug(f"  Device: {device}")
+
         for i in range(num_envs):
             # Generate unique environment ID
             env_id = f"{self.name}-{uuid.uuid4().hex[:8]}"
@@ -277,7 +278,7 @@ class EnvBackend(ABC):
             container = None
             try:
                 # Get environment-specific container configuration
-                config = self._get_container_config()
+                config = self._get_container_config(device)
                 
                 # Start container with configured settings
                 container = self.client.containers.run(
@@ -564,18 +565,38 @@ class EnvBackend(ABC):
                 should include fields like 'index', 'name', 'instruction'.
         """
         pass
-
-    def _get_container_config(self) -> Dict:
+    
+    def _get_container_config(self, device: str) -> Dict:
         """
         Get container configuration for Docker.
         
-        Override in subclass to provide custom container configuration
-        such as environment variables, volume mounts, or GPU access.
+        Override in subclass to provide custom container configuration.
+        The base implementation handles GPU device requests and environment
+        variables for CUDA and attention configuration.
         
-        :return: Dictionary with environment, volumes, device_requests, etc.
+        :param device: Device string ('cpu', 'cuda:0', etc.).
+        :return: Dictionary with environment, device_requests.
         """
+        # Parse GPU index from device string
+        gpu_idx = "0"
+        device_requests = []
+        
+        if device.startswith("cuda"):
+            # Extract GPU index (e.g., "cuda:1" -> "1")
+            gpu_idx = device.split(":")[-1] if ":" in device else "0"
+            
+            # Create GPU device request for Docker
+            device_requests = [
+                docker.types.DeviceRequest(
+                    device_ids=[gpu_idx],
+                    capabilities=[["gpu"]]
+                )
+            ]
+        
         return {
-            "environment": {},
-            "volumes": {},
-            "device_requests": [],
+            "environment": {
+                # Set CUDA_VISIBLE_DEVICES to restrict GPU visibility
+                "CUDA_VISIBLE_DEVICES": gpu_idx if device.startswith("cuda") else "",
+            },
+            "device_requests": device_requests,
         }

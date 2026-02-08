@@ -36,7 +36,7 @@ class RoboCasaEnvBackend(EnvBackend):
     _health_check_interval: int = 2
     _memory_limit: str = "4g"
 
-    def _get_container_config(self) -> dict:
+    def _get_container_config(self, device: str) -> dict:
         """
         Get RoboCasa-specific container configuration.
         
@@ -45,16 +45,12 @@ class RoboCasaEnvBackend(EnvBackend):
         - No volume mounts: All assets included in image
         - No device requests: CPU-only rendering
         
+        :param device: Device string ('cpu', 'cuda:0', etc.).
         :return: Dictionary with environment variables, volumes, and device requests.
         """
-        return {
-            "environment": {
-                # Use OSMesa for software rendering (headless, no display needed)
-                "MUJOCO_GL": "osmesa",
-            },
-            "volumes": {},
-            "device_requests": [],
-        }
+        config = super()._get_container_config(device)
+        config["environment"]["MUJOCO_GL"] = "osmesa"
+        return config
 
     def list_tasks(self, suite: Optional[str] = None) -> dict:
         """

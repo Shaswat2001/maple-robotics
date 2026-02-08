@@ -93,6 +93,7 @@ class ActBatchRequest(BaseModel):
 class ServeEnvRequest(BaseModel):
     """Request model for serving environment containers."""
     name: str
+    device: str = "cpu"
     num_envs: int = 1
     host_port: Optional[int] = None
 
@@ -649,6 +650,7 @@ class VLADaemon:
             """
             name = req.name
             host_port = req.host_port
+            device=req.device
             num_envs = req.num_envs
 
             # Validate environment was pulled
@@ -672,6 +674,7 @@ class VLADaemon:
             # Serve environments (can create multiple instances)
             try:
                 handles = backend.serve(num_envs= num_envs,
+                                        device= device,
                                         host_port= host_port)
             except Exception as e:
                 raise HTTPException(
@@ -705,6 +708,7 @@ class VLADaemon:
             
             return {
                 "served": name,
+                "device": handle.device,
                 "num_envs": len(handles),
                 "env_ids": [h.env_id for h in handles],
                 "ports": [h.port for h in handles],
