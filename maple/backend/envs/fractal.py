@@ -1,11 +1,10 @@
 """
-SimplerEnv environment backend.
+Fractal environment backend.
 
-This module implements the environment backend for SimplerEnv (Bridge + Fractal Sim), 
+This module implements the environment backend for Fractal dataset, 
 a suite of robotic manipulation tasks with natural language instructions.
 
-SimplerEnv provides multiple task suites:
-- bridge: 4 task with the WidowX robot
+Fractal provides multiple task suites:
 - fractal: 16 task with the Google Robot
 
 The backend handles Docker container management and provides task enumeration
@@ -19,21 +18,21 @@ from typing import Optional
 from maple.backend.envs.base import EnvBackend
 from maple.utils.logging import get_logger
 
-log = get_logger("env.simplerenv")
+log = get_logger("env.fractal")
 
-class SimplerEnvBackend(EnvBackend):
+class FractalBackend(EnvBackend):
     """
-    Backend for SimplerEnv manipulation environments.
+    Backend for Fractal manipulation environments.
     
-    Manages SimplerEnv environment containers with MuJoCo physics simulation
+    Manages Fractal environment containers with MuJoCo physics simulation
     using EGL for headless rendering. Provides access to multiple task
     suites with language-conditioned manipulation tasks.
     
     The backend uses the maplerobotics/simplerenv:latest Docker image which
-    includes SimplerEnv, and all necessary dependencies pre-configured.
+    includes Fractal, and all necessary dependencies pre-configured.
     """
     
-    name = "simplerenv"
+    name = "fractal"
     _image = "maplerobotics/simplerenv:latest"
     _container_port: int = 8000
     _startup_timeout: int = 120
@@ -42,7 +41,7 @@ class SimplerEnvBackend(EnvBackend):
 
     def _get_container_config(self, device: str) -> dict:
         """
-        Get SimplerEnv-specific container configuration.
+        Get Fractal-specific container configuration.
 
         :param device: Device string ('cpu', 'cuda:0', etc.).
         :return: Dictionary with environment variables, volumes, and device requests.
@@ -57,7 +56,7 @@ class SimplerEnvBackend(EnvBackend):
 
     def list_tasks(self, suite: Optional[str] = None) -> dict:
         """
-        List available SimplerEnv tasks.
+        List available Fractal tasks.
         
         Returns task information in two modes:
         1. Dynamic mode (if container running): Queries container for detailed
@@ -67,7 +66,7 @@ class SimplerEnvBackend(EnvBackend):
         The dynamic mode provides complete task details by querying a running
         container's /tasks endpoint, which returns the full task registry.
         
-        :param suite: Optional suite name to filter results (e.g., 'bridge').
+        :param suite: Optional suite name to filter results (e.g., 'fractal').
         
         :return: Dictionary mapping suite names to task information. In dynamic
                 mode, each suite maps to a list of task dicts with 'index',
@@ -83,8 +82,8 @@ class SimplerEnvBackend(EnvBackend):
             try:
                 # Build query parameters
                 params = {}
-                if suite:
-                    params["suite"] = suite
+
+                params["suite"] = "fractal"
                 
                 # Query container for task list
                 resp = requests.get(f"{base_url}/tasks", params=params, timeout=30)
@@ -98,10 +97,6 @@ class SimplerEnvBackend(EnvBackend):
         # Fallback: return static task suite information
         # This is returned when no container is running or query fails
         return {
-            "bridge": {
-                "description": "Tasks with the WidowX robot",
-                "count": 4
-            },
             "fractal": {
                 "description": "Tasks with the Google Robot",
                 "count": 16

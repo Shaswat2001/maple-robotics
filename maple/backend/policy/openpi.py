@@ -215,6 +215,24 @@ class OpenPIPolicy(PolicyBackend):
 
     def pull(self, version: str, dst: Path) -> Dict:
         """
+        Pull model weights and Docker image.
+        
+        Downloads OpenPI model checkpoints from the public S3 bucket
+        or hugging face. Also pulls the Docker image for serving the model.
+                
+        :param version: Model version to download (e.g., 'pi05_droid', 'pi0_base').
+        :param dst: Destination path for model weights (parent directory is used).
+        :return: Dictionary with download metadata including name, image, version,
+                source, gs_path, config_name, and local path.
+        """
+
+        if "gs" in version:
+            return self.pull_gs(version, dst)
+        else:
+            return super().pull(version, dst)
+
+    def pull_gs(self, version: str, dst: Path) -> Dict:
+        """
         Pull model weights from Google Cloud Storage and Docker image.
         
         Downloads OpenPI model checkpoints from the public S3 bucket
