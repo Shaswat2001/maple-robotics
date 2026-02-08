@@ -27,4 +27,5 @@ class SmolVLALiberoAdapter(Adapter):
         return payload
     
     def transform_action(self, raw_action: List[float]) -> List[float]:
+        
         return raw_action

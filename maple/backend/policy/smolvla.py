@@ -1,5 +1,5 @@
 import requests
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from maple.utils.logging import get_logger
 from maple.backend.policy.base import PolicyBackend, PolicyHandle
 
@@ -33,6 +33,7 @@ class SmolVLAPolicy(PolicyBackend):
         handle: PolicyHandle, 
         payload: Any, 
         instruction: str,
+        model_kwargs: Optional[Dict[str, Any]] = {},
     ) -> List[float]:
         """Get action for a single observation."""
         base_url = self._get_base_url(handle)
