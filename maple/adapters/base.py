@@ -128,3 +128,181 @@ class Adapter:
             return np.zeros(3)
 
         return (quat[:3] * 2.0 * math.acos(quat[3])) / den
+
+    def quat2mat(self, quat: np.ndarray) -> np.ndarray:
+        """
+        Convert quaternion to rotation matrix.
+        
+        Args:
+            quat: Quaternion in [x, y, z, w] format (4,) array
+            
+        Returns:
+            Rotation matrix (3, 3) array
+        """
+        # Normalize quaternion
+        quat = quat / np.linalg.norm(quat)
+        
+        x, y, z, w = quat
+        
+        # Compute rotation matrix elements
+        xx = x * x
+        yy = y * y
+        zz = z * z
+        xy = x * y
+        xz = x * z
+        yz = y * z
+        wx = w * x
+        wy = w * y
+        wz = w * z
+        
+        mat = np.array([
+            [1 - 2*(yy + zz),     2*(xy - wz),     2*(xz + wy)],
+            [    2*(xy + wz), 1 - 2*(xx + zz),     2*(yz - wx)],
+            [    2*(xz - wy),     2*(yz + wx), 1 - 2*(xx + yy)]
+        ])
+        
+        return mat
+
+    def mat2euler(self, mat: np.ndarray, seq: str = 'xyz') -> np.ndarray:
+        """
+        Convert rotation matrix to Euler angles.
+        
+        Args:
+            mat: Rotation matrix (3, 3) array
+            seq: Sequence of rotations ('xyz', 'zyx', etc.). Default is 'xyz'
+            
+        Returns:
+            Euler angles [roll, pitch, yaw] in radians (3,) array
+        """
+        # Using XYZ (roll-pitch-yaw) convention by default
+        if seq.lower() == 'xyz':
+            # Extract euler angles from rotation matrix
+            # R = Rz(yaw) * Ry(pitch) * Rx(roll)
+            
+            sy = np.sqrt(mat[0, 0]**2 + mat[1, 0]**2)
+            
+            singular = sy < 1e-6
+            
+            if not singular:
+                roll = np.arctan2(mat[2, 1], mat[2, 2])
+                pitch = np.arctan2(-mat[2, 0], sy)
+                yaw = np.arctan2(mat[1, 0], mat[0, 0])
+            else:
+                # Gimbal lock case
+                roll = np.arctan2(-mat[1, 2], mat[1, 1])
+                pitch = np.arctan2(-mat[2, 0], sy)
+                yaw = 0
+                
+            return np.array([roll, pitch, yaw])
+        
+        elif seq.lower() == 'zyx':
+            # ZYX convention (yaw-pitch-roll)
+            sy = np.sqrt(mat[0, 0]**2 + mat[1, 0]**2)
+            
+            singular = sy < 1e-6
+            
+            if not singular:
+                yaw = np.arctan2(mat[1, 0], mat[0, 0])
+                pitch = np.arctan2(-mat[2, 0], sy)
+                roll = np.arctan2(mat[2, 1], mat[2, 2])
+            else:
+                yaw = np.arctan2(-mat[0, 1], mat[1, 1])
+                pitch = np.arctan2(-mat[2, 0], sy)
+                roll = 0
+                
+            return np.array([roll, pitch, yaw])
+        
+        else:
+            raise ValueError(f"Unsupported sequence: {seq}. Use 'xyz' or 'zyx'")
+
+    def euler2axangle(self, euler: np.ndarray, seq: str = 'xyz') -> np.ndarray:
+        """
+        Convert Euler angles to axis-angle representation.
+        
+        Args:
+            euler: Euler angles [roll, pitch, yaw] in radians (3,) array
+            seq: Sequence of rotations ('xyz', 'zyx', etc.). Default is 'xyz'
+            
+        Returns:
+            Axis-angle representation (3,) array where magnitude is rotation angle
+        """
+        # Convert euler -> rotation matrix -> quaternion -> axis-angle
+        # This is more numerically stable than direct conversion
+        
+        roll, pitch, yaw = euler
+        
+        if seq.lower() == 'xyz':
+            # Compute quaternion from euler angles (XYZ convention)
+            cy = np.cos(yaw * 0.5)
+            sy = np.sin(yaw * 0.5)
+            cp = np.cos(pitch * 0.5)
+            sp = np.sin(pitch * 0.5)
+            cr = np.cos(roll * 0.5)
+            sr = np.sin(roll * 0.5)
+            
+            qw = cr * cp * cy + sr * sp * sy
+            qx = sr * cp * cy - cr * sp * sy
+            qy = cr * sp * cy + sr * cp * sy
+            qz = cr * cp * sy - sr * sp * cy
+            
+        elif seq.lower() == 'zyx':
+            # ZYX convention
+            cy = np.cos(yaw * 0.5)
+            sy = np.sin(yaw * 0.5)
+            cp = np.cos(pitch * 0.5)
+            sp = np.sin(pitch * 0.5)
+            cr = np.cos(roll * 0.5)
+            sr = np.sin(roll * 0.5)
+            
+            qw = cr * cp * cy + sr * sp * sy
+            qx = sr * cp * cy - cr * sp * sy
+            qy = cr * sp * cy + sr * cp * sy
+            qz = cr * cp * sy - sr * sp * cy
+        else:
+            raise ValueError(f"Unsupported sequence: {seq}. Use 'xyz' or 'zyx'")
+        
+        quat = np.array([qx, qy, qz, qw])
+        
+        # Convert quaternion to axis-angle
+        return self.quat2axisangle(quat)
+
+    def euler2mat(self, euler: np.ndarray, seq: str = 'xyz') -> np.ndarray:
+        """
+        Convert Euler angles to rotation matrix.
+        
+        Args:
+            euler: Euler angles [roll, pitch, yaw] in radians (3,) array
+            seq: Sequence of rotations ('xyz', 'zyx', etc.). Default is 'xyz'
+            
+        Returns:
+            Rotation matrix (3, 3) array
+        """
+        roll, pitch, yaw = euler
+        
+        # Individual rotation matrices
+        Rx = np.array([
+            [1, 0, 0],
+            [0, np.cos(roll), -np.sin(roll)],
+            [0, np.sin(roll), np.cos(roll)]
+        ])
+        
+        Ry = np.array([
+            [np.cos(pitch), 0, np.sin(pitch)],
+            [0, 1, 0],
+            [-np.sin(pitch), 0, np.cos(pitch)]
+        ])
+        
+        Rz = np.array([
+            [np.cos(yaw), -np.sin(yaw), 0],
+            [np.sin(yaw), np.cos(yaw), 0],
+            [0, 0, 1]
+        ])
+        
+        if seq.lower() == 'xyz':
+            # R = Rz * Ry * Rx
+            return Rz @ Ry @ Rx
+        elif seq.lower() == 'zyx':
+            # R = Rx * Ry * Rz
+            return Rx @ Ry @ Rz
+        else:
+            raise ValueError(f"Unsupported sequence: {seq}. Use 'xyz' or 'zyx'")

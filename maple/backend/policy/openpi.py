@@ -67,6 +67,8 @@ class OpenPIPolicy(PolicyBackend):
         
         # LIBERO fine-tuned model (long-horizon benchmark)
         "pi05_libero": "gs://openpi-assets/checkpoints/pi05_libero",
+        "pi0_bridge": "HaomingSong/openpi0-bridge-lora",
+        "pi0_fractal": "HaomingSong/openpi0-fractal-lora",
     }
     
     # Map version to config name (used by OpenPI internally for model initialization)
@@ -81,6 +83,8 @@ class OpenPIPolicy(PolicyBackend):
         "pi0_aloha_tupperware": "pi0_aloha_tupperware",
         "pi0_aloha_pen_uncap": "pi0_aloha_pen_uncap",
         "pi05_libero": "pi05_libero",
+        "pi0_fractal": "pi0_fractal_lora",
+        "pi0_bridge": "pi0_bridge_low_mem_finetune"
     }
     
     # Aliases for convenience

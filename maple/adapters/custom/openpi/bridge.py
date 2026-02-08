@@ -20,7 +20,7 @@ class OpenPIBridgeAdapter(Adapter):
     name: str = "openpi:bridge"
     env: str = "bridge"
     policy: str = "openpi"
-    image_key: Dict[str, str] = {"observation/image":"image"}
+    image_key: Dict[str, str] = {"observation/primary_image":"image"}
     image_size = (224, 224)
 
     def __init__(self):
@@ -40,10 +40,14 @@ class OpenPIBridgeAdapter(Adapter):
             image = self.resize_image(image, self.image_size)
             image = self.rotate_image(image)
             payload[vla_key] = image
+        
+        eef_pos= np.array(raw_proprio["agent"]['data']["eef_pos"]['data'])
+        rm_bridge = self.quat2mat(eef_pos[3:7])
+        rpy_bridge_converted = self.mat2euler(rm_bridge @ self.default_rot.T)
+        gripper_openness = eef_pos[7] # from simpler, 0 for close, 1 for open
+        raw_proprio = np.concatenate([eef_pos[:3], rpy_bridge_converted, np.zeros(1), [gripper_openness]])
 
-        payload["observation/state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]["data"]), 
-                                           self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"])), 
-                                           np.array(raw_obs["robot0_gripper_qpos"]["data"])]).tolist()
+        payload["observation/state"] = raw_proprio.tolist()
                             
         return payload
     
@@ -54,4 +58,20 @@ class OpenPIBridgeAdapter(Adapter):
         :return: Tranformed action needed by the libero.
         """
         
-        return raw_action
+        raw_action = {
+            "world_vector": np.array(raw_action[:3]),
+            "rotation_delta": np.array(raw_action[3:6]),
+            "open_gripper": np.array(raw_action[6:7]),
+        }
+
+        action = {}
+        action["world_vector"] = raw_action["world_vector"] * self.action_scale
+        action_rotation_delta = np.asarray(raw_action["rotation_delta"], dtype=np.float64)
+        roll, pitch, yaw = action_rotation_delta
+        action_rotation_ax, action_rotation_angle = self.euler2axangle(roll, pitch, yaw)
+        action_rotation_axangle = action_rotation_ax * action_rotation_angle
+        action["rot_axangle"] = action_rotation_axangle * self.action_scale
+        action["gripper"] = 2.0 * (raw_action["open_gripper"] > 0.5) - 1.0
+        action_conc = np.concatenate([action["world_vector"], action["rot_axangle"], action["gripper"]]).tolist()
+
+        return action_conc
