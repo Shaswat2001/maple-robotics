@@ -7,7 +7,7 @@ class SmolVLALiberoAdapter(Adapter):
     name: str = "smolvla:libero"
     env: str = "libero"
     policy: str = "smolvla"
-    image_key: Dict[str, str] = {"image":"agentview_image", "image2": "robot0_eye_in_hand_image"}
+    image_key: Dict[str, str] = {"observation.images.image":"agentview_image", "observation.images.image2": "robot0_eye_in_hand_image"}
     image_size = (224, 224)
 
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +20,7 @@ class SmolVLALiberoAdapter(Adapter):
             image = self.rotate_image(image)
             payload[vla_key] = image
 
-        payload["state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]["data"]), 
+        payload["observation.state"] = np.concatenate([np.array(raw_obs["robot0_eef_pos"]["data"]), 
                                            self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"])), 
                                            np.array(raw_obs["robot0_gripper_qpos"]["data"])]).tolist()
                             

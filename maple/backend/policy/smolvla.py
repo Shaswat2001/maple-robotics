@@ -37,16 +37,18 @@ class SmolVLAPolicy(PolicyBackend):
         """Get action for a single observation."""
         base_url = self._get_base_url(handle)
         
-        vla_payload = {
-            "image": self._encode_image(payload["image"]),
-            "instruction": instruction,
-        }
-
-        if "image2" in payload:
-            vla_payload["image2"] = self._encode_image(payload["image2"])
+        observations = {}
+        for key, value in payload.items():
+            if "image" in key:
+                observations[key] = self._encode_image(value) if not isinstance(value, str) else value
+            else:
+                observations[key] = value
+        payload = {}
+        payload["observations"] = observations
+        payload["prompt"] = instruction    
         
         try:
-            resp = requests.post(f"{base_url}/act", json=vla_payload, timeout=300)
+            resp = requests.post(f"{base_url}/act", json=payload, timeout=300)
             resp.raise_for_status()
             return resp.json()["action"]
         except requests.exceptions.RequestException as e:
