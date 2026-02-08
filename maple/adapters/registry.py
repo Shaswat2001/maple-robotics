@@ -6,14 +6,15 @@ To add a new adapter, call the register function with Adapter class and policy:e
 """
 
 from typing import Dict, Type, Any, List
-from maple.adapters.custom import OpenVLALiberoAdapter, SmolVLALiberoAdapter, OpenPILiberoAdapter
+from maple.adapters.custom import OpenVLALiberoAdapter, SmolVLALiberoAdapter, OpenPILiberoAdapter, OpenPIAlohaSimAdapter
 from maple.adapters.base import Adapter
 
 # Global registry
 ADAPTERS: Dict[str, Adapter] = {
     "openvla:libero": OpenVLALiberoAdapter,
     "smolvla:libero": SmolVLALiberoAdapter,
-    "openpi:libero": OpenPILiberoAdapter
+    "openpi:libero": OpenPILiberoAdapter,
+    "openpi:alohasim": OpenPIAlohaSimAdapter
 }
 
 def get_adapter(policy: str, env: str) -> Adapter:

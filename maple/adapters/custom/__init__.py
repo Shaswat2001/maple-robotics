@@ -4,8 +4,9 @@ This module contains adapters associated between environments and policy.
 """
 from .openvla import OpenVLALiberoAdapter
 from .smolvla import SmolVLALiberoAdapter
-from .openpi import OpenPILiberoAdapter
+from .openpi import OpenPILiberoAdapter, OpenPIAlohaSimAdapter
 
 __all__ = ["OpenVLALiberoAdapter",
            "SmolVLALiberoAdapter",
-           "OpenPILiberoAdapter"]
+           "OpenPILiberoAdapter", 
+           "OpenPIAlohaSimAdapter"]
