@@ -69,6 +69,7 @@ class EnvHandle:
     """
     env_id: str
     backend_name: str
+    device: str
     host: str
     port: str
     container_id: Optional[str] = None
@@ -82,6 +83,7 @@ class EnvHandle:
         """
         return {
             "env_id": self.env_id,
+            "device": self.device,
             "backend_name": self.backend_name,
             "host": self.host,
             "port": self.port,
@@ -311,6 +313,7 @@ class EnvBackend(ABC):
                 # Create handle for this environment
                 handle = EnvHandle(
                     env_id=env_id,
+                    device=device,
                     backend_name=self.name,
                     host="127.0.0.1",
                     port=actual_port,
