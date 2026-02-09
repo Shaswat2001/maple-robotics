@@ -128,6 +128,31 @@ class Adapter:
             return np.zeros(3)
 
         return (quat[:3] * 2.0 * math.acos(quat[3])) / den
+    
+    def quat2axangle(self, quat, identity_thresh=None):
+        quat = np.asarray(quat)
+        Nq = np.sum(quat**2)
+        if not np.isfinite(Nq):
+            return np.array([1.0, 0, 0]), float("nan")
+        if identity_thresh is None:
+            try:
+                identity_thresh = np.finfo(Nq.type).eps * 3
+            except (AttributeError, ValueError):  # Not a numpy type or not float
+                identity_thresh = np.finfo(np.float64).eps * 3
+        if Nq < np.finfo(np.float64).eps**2:  # Results unreliable after normalization
+            return np.array([1.0, 0, 0]), 0.0
+        if Nq != 1:  # Normalize if not normalized
+            s = math.sqrt(Nq)
+            quat = quat / s
+        xyz = quat[1:]
+        len2 = np.sum(xyz**2)
+        if len2 < identity_thresh**2:
+            # if vec is nearly 0,0,0, this is an identity rotation
+            return np.array([1.0, 0, 0]), 0.0
+        # Make sure w is not slightly above 1 or below -1
+        theta = 2 * math.acos(max(min(quat[0], 1), -1))
+        return xyz / math.sqrt(len2), theta
+
 
     def quat2mat(self, quat: np.ndarray) -> np.ndarray:
         """
@@ -226,45 +251,52 @@ class Adapter:
         Returns:
             Axis-angle representation (3,) array where magnitude is rotation angle
         """
-        # Convert euler -> rotation matrix -> quaternion -> axis-angle
-        # This is more numerically stable than direct conversion
-        
-        roll, pitch, yaw = euler
-        
-        if seq.lower() == 'xyz':
-            # Compute quaternion from euler angles (XYZ convention)
-            cy = np.cos(yaw * 0.5)
-            sy = np.sin(yaw * 0.5)
-            cp = np.cos(pitch * 0.5)
-            sp = np.sin(pitch * 0.5)
-            cr = np.cos(roll * 0.5)
-            sr = np.sin(roll * 0.5)
-            
-            qw = cr * cp * cy + sr * sp * sy
-            qx = sr * cp * cy - cr * sp * sy
-            qy = cr * sp * cy + sr * cp * sy
-            qz = cr * cp * sy - sr * sp * cy
-            
-        elif seq.lower() == 'zyx':
-            # ZYX convention
-            cy = np.cos(yaw * 0.5)
-            sy = np.sin(yaw * 0.5)
-            cp = np.cos(pitch * 0.5)
-            sp = np.sin(pitch * 0.5)
-            cr = np.cos(roll * 0.5)
-            sr = np.sin(roll * 0.5)
-            
-            qw = cr * cp * cy + sr * sp * sy
-            qx = sr * cp * cy - cr * sp * sy
-            qy = cr * sp * cy + sr * cp * sy
-            qz = cr * cp * sy - sr * sp * cy
-        else:
-            raise ValueError(f"Unsupported sequence: {seq}. Use 'xyz' or 'zyx'")
-        
-        quat = np.array([qx, qy, qz, qw])
-        
         # Convert quaternion to axis-angle
-        return self.quat2axisangle(quat)
+        return self.quat2axangle(self.euler2quat(euler))
+    
+    def euler2quat(self, euler):
+        
+        ai, aj, ak = euler
+        firstaxis, parity, repetition, frame = (0, 0, 0, 0)
+        _next_axis = [1, 2, 0, 1]
+        i = firstaxis + 1
+        j = _next_axis[i + parity - 1] + 1
+        k = _next_axis[i - parity] + 1
+
+        if frame:
+            ai, ak = ak, ai
+        if parity:
+            aj = -aj
+
+        ai = ai / 2.0
+        aj = aj / 2.0
+        ak = ak / 2.0
+        ci = math.cos(ai)
+        si = math.sin(ai)
+        cj = math.cos(aj)
+        sj = math.sin(aj)
+        ck = math.cos(ak)
+        sk = math.sin(ak)
+        cc = ci * ck
+        cs = ci * sk
+        sc = si * ck
+        ss = si * sk
+
+        q = np.empty((4,))
+        if repetition:
+            q[0] = cj * (cc - ss)
+            q[i] = cj * (cs + sc)
+            q[j] = sj * (cc + ss)
+            q[k] = sj * (cs - sc)
+        else:
+            q[0] = cj * cc + sj * ss
+            q[i] = cj * sc - sj * cs
+            q[j] = cj * ss + sj * cc
+            q[k] = cj * cs - sj * sc
+        if parity:
+            q[j] *= -1.0
+
+        return q
 
     def euler2mat(self, euler: np.ndarray, seq: str = 'xyz') -> np.ndarray:
         """

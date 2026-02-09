@@ -66,7 +66,9 @@ class OpenPIPolicy(PolicyBackend):
         "pi0_aloha_pen_uncap": "gs://openpi-assets/checkpoints/pi0_aloha_pen_uncap",
         
         # LIBERO fine-tuned model (long-horizon benchmark)
-        "pi05_libero": "gs://openpi-assets/checkpoints/pi05_libero",
+        "pi05_libero": "gs://openpi-assets/checkpoints/pi05_libero"}
+        
+    _hf_repos = {
         "pi0_bridge": "HaomingSong/openpi0-bridge-lora",
         "pi0_fractal": "HaomingSong/openpi0-fractal-lora",
     }
@@ -110,7 +112,7 @@ class OpenPIPolicy(PolicyBackend):
             "type": "policy",
             "inputs": ["image", "state", "prompt"],  # Required inputs for inference
             "outputs": ["action"],  # Model produces action vectors
-            "versions": list(self._gs_checkpoints.keys()),  # Available model versions
+            "versions": list(self._gs_checkpoints.keys()) + list(self._hf_repos.keys()),  # Available model versions
             "image": self._image,  # Docker image used for serving
             "source": "gs",  # Models stored in Google Cloud Storage
         }
@@ -200,6 +202,12 @@ class OpenPIPolicy(PolicyBackend):
                 raise ValueError(f"config_name required for OpenPI version: {handle.version}")
             else:
                 model_load_kwargs["config_name"] = config_name
+        else:
+            openpi_config_name = self._config_names.get(config_name)
+            if not openpi_config_name:
+                raise ValueError(f"Incorrect config_name for OpenPI, Available: {list(self._config_names.keys())}")
+            else:
+                model_load_kwargs["config_name"] = openpi_config_name
         
         log.info(f"Loading OpenPI model: {config_name} on {device}")
         
