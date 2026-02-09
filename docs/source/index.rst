@@ -164,7 +164,7 @@ Quick Links
    guides/installation
    guides/quickstart
    guides/configuration
-   guides/policies_envs
+   guides/policy_envs
 
 .. toctree::
    :maxdepth: 2
