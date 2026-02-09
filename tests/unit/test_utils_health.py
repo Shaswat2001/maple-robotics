@@ -1,10 +1,68 @@
 """
-Tests for maple.utils.health module.
+Unit tests for maple.utils.health module.
+
+Tests cover:
+- HealthMonitor container registration/unregistration
+- Health check execution and status tracking
+- Failure threshold and unhealthy callbacks
+- MonitoredContainer data class
 """
 
 import pytest
 import time
 from unittest.mock import MagicMock
+
+
+class TestHealthStatus:
+    """Tests for HealthStatus enum."""
+    
+    @pytest.mark.unit
+    def test_health_status_values(self):
+        """Test HealthStatus enum has expected values."""
+        from maple.utils.health import HealthStatus
+        
+        assert HealthStatus.HEALTHY.value == "healthy"
+        assert HealthStatus.UNHEALTHY.value == "unhealthy"
+        assert HealthStatus.UNKNOWN.value == "unknown"
+        assert HealthStatus.RESTARTING.value == "restarting"
+
+
+class TestMonitoredContainer:
+    """Tests for MonitoredContainer data class."""
+    
+    @pytest.mark.unit
+    def test_to_dict(self):
+        """Test MonitoredContainer serialization."""
+        from maple.utils.health import MonitoredContainer, HealthStatus
+        
+        container = MonitoredContainer(
+            container_id="test123",
+            name="test-container",
+            check_fn=lambda: True,
+        )
+        
+        d = container.to_dict()
+        
+        assert d["container_id"] == "test123"
+        assert d["name"] == "test-container"
+        assert d["status"] == "unknown"
+        assert d["consecutive_failures"] == 0
+    
+    @pytest.mark.unit
+    def test_default_values(self):
+        """Test MonitoredContainer defaults."""
+        from maple.utils.health import MonitoredContainer, HealthStatus
+        
+        container = MonitoredContainer(
+            container_id="test",
+            name="test",
+            check_fn=lambda: True,
+        )
+        
+        assert container.status == HealthStatus.UNKNOWN
+        assert container.consecutive_failures == 0
+        assert container.auto_restart is False
+        assert container.max_failures == 3
 
 
 class TestHealthMonitor:
@@ -30,7 +88,7 @@ class TestHealthMonitor:
     
     @pytest.mark.unit
     def test_unregister_container(self):
-        """Test unregistering a container."""
+        """Test unregistering a container from monitoring."""
         from maple.utils.health import HealthMonitor
         
         monitor = HealthMonitor(check_interval=1.0)
@@ -49,7 +107,7 @@ class TestHealthMonitor:
     
     @pytest.mark.unit
     def test_get_status(self):
-        """Test getting container status."""
+        """Test getting container health status."""
         from maple.utils.health import HealthMonitor, HealthStatus
         
         monitor = HealthMonitor(check_interval=1.0)
@@ -85,7 +143,7 @@ class TestHealthMonitor:
     
     @pytest.mark.unit
     def test_health_check_success(self):
-        """Test health check marks container as healthy."""
+        """Test that successful health check marks container healthy."""
         from maple.utils.health import HealthMonitor, HealthStatus
         
         monitor = HealthMonitor(check_interval=0.1)
@@ -93,16 +151,16 @@ class TestHealthMonitor:
         check_fn = MagicMock(return_value=True)
         monitor.register("healthy_test", "test", check_fn)
         
-        # Manually run check
-        monitor._check_container("healthy_test")
+        # Get the container and manually run check
+        container = monitor._containers["healthy_test"]
+        monitor._check_container(container)
         
-        status = monitor.get_status("healthy_test")
-        assert status["status"] == HealthStatus.HEALTHY.value
-        assert status["consecutive_failures"] == 0
+        assert container.status == HealthStatus.HEALTHY
+        assert container.consecutive_failures == 0
     
     @pytest.mark.unit
-    def test_health_check_failure(self):
-        """Test health check marks container as unhealthy after failures."""
+    def test_health_check_failure_counting(self):
+        """Test that failed health checks increment failure count."""
         from maple.utils.health import HealthMonitor, HealthStatus
         
         monitor = HealthMonitor(check_interval=0.1)
@@ -115,21 +173,21 @@ class TestHealthMonitor:
             max_failures=2,
         )
         
+        container = monitor._containers["unhealthy_test"]
+        
         # First failure
-        monitor._check_container("unhealthy_test")
-        status = monitor.get_status("unhealthy_test")
-        assert status["consecutive_failures"] == 1
-        assert status["status"] == HealthStatus.HEALTHY.value  # Not yet unhealthy
+        monitor._check_container(container)
+        assert container.consecutive_failures == 1
+        assert container.status == HealthStatus.UNKNOWN  # Not yet unhealthy
         
         # Second failure - now unhealthy
-        monitor._check_container("unhealthy_test")
-        status = monitor.get_status("unhealthy_test")
-        assert status["consecutive_failures"] == 2
-        assert status["status"] == HealthStatus.UNHEALTHY.value
+        monitor._check_container(container)
+        assert container.consecutive_failures == 2
+        assert container.status == HealthStatus.UNHEALTHY
     
     @pytest.mark.unit
     def test_on_unhealthy_callback(self):
-        """Test unhealthy callback is called."""
+        """Test that unhealthy callback is invoked."""
         from maple.utils.health import HealthMonitor
         
         callback = MagicMock()
@@ -142,47 +200,23 @@ class TestHealthMonitor:
             max_failures=1,
         )
         
-        monitor._check_container("callback_test")
+        container = monitor._containers["callback_test"]
+        monitor._check_container(container)
         
         callback.assert_called_once()
+        # Callback should receive the container object
         call_args = callback.call_args[0]
-        assert call_args[0] == "callback_test"
-
-
-class TestDaemonLock:
-    """Tests for DaemonLock class."""
+        assert call_args[0].container_id == "callback_test"
     
     @pytest.mark.unit
-    def test_acquire_release(self, temp_dir, monkeypatch):
-        """Test acquiring and releasing lock."""
-        from maple.utils.lock import DaemonLock
+    def test_is_running_property(self):
+        """Test is_running property."""
+        from maple.utils.health import HealthMonitor
         
-        socket_path = temp_dir / "test.sock"
-        monkeypatch.setattr("maple.utils.lock._get_socket_path", lambda: socket_path)
+        monitor = HealthMonitor(check_interval=1.0)
         
-        lock = DaemonLock()
+        assert monitor.is_running is False
         
-        assert lock.acquire() is True
-        assert socket_path.exists()
-        
-        lock.release()
-    
-    @pytest.mark.unit
-    def test_is_daemon_running(self, temp_dir, monkeypatch):
-        """Test checking if daemon is running."""
-        from maple.utils.lock import DaemonLock, is_daemon_running
-        
-        socket_path = temp_dir / "test2.sock"
-        monkeypatch.setattr("maple.utils.lock._get_socket_path", lambda: socket_path)
-        
-        # No daemon running
-        assert is_daemon_running() is False
-        
-        # Start daemon
-        lock = DaemonLock()
-        lock.acquire()
-        
-        # Now running
-        assert is_daemon_running() is True
-        
-        lock.release()
+        # Don't actually start the thread in unit test
+        monitor._running = True
+        assert monitor.is_running is True

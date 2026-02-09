@@ -1,5 +1,11 @@
 """
-Tests for maple.state.store module.
+Unit tests for maple.state.store module.
+
+Tests cover:
+- Policy storage (CRUD operations)
+- Environment storage
+- Container state management
+- Run history tracking and statistics
 """
 
 import pytest
@@ -11,25 +17,29 @@ class TestPolicyStore:
     
     @pytest.mark.unit
     def test_add_policy(self, test_db):
-        """Test adding a policy."""
+        """Test adding a policy to the store."""
         from maple.state import store
         
+        # add_policy(name, image, version, path, repo)
         store.add_policy(
             name="openvla",
+            image="maplerobotics/openvla:latest",
             version="7b",
             path="/path/to/weights",
             repo="openvla/openvla-7b"
         )
         
         policies = store.list_policies()
-        assert "openvla:7b" in policies
+        # list_policies returns list of dicts
+        names = [f"{p['name']}:{p['version']}" for p in policies]
+        assert "openvla:7b" in names
     
     @pytest.mark.unit
     def test_get_policy(self, test_db):
-        """Test getting a policy."""
+        """Test retrieving a policy by name and version."""
         from maple.state import store
         
-        store.add_policy("test_policy", "v1", "/test/path", "org/repo")
+        store.add_policy("test_policy", "test:image", "v1", "/test/path", "org/repo")
         
         policy = store.get_policy("test_policy", "v1")
         
@@ -41,7 +51,7 @@ class TestPolicyStore:
     
     @pytest.mark.unit
     def test_get_nonexistent_policy(self, test_db):
-        """Test getting a policy that doesn't exist."""
+        """Test that getting a nonexistent policy returns None."""
         from maple.state import store
         
         policy = store.get_policy("nonexistent", "v1")
@@ -49,30 +59,35 @@ class TestPolicyStore:
     
     @pytest.mark.unit
     def test_remove_policy(self, test_db):
-        """Test removing a policy."""
+        """Test removing a policy from the store."""
         from maple.state import store
         
-        store.add_policy("to_remove", "v1", "/path", "org/repo")
-        assert "to_remove:v1" in store.list_policies()
+        store.add_policy("to_remove", "test:image", "v1", "/path", "org/repo")
+        policies = store.list_policies()
+        names = [f"{p['name']}:{p['version']}" for p in policies]
+        assert "to_remove:v1" in names
         
         store.remove_policy("to_remove", "v1")
-        assert "to_remove:v1" not in store.list_policies()
+        policies = store.list_policies()
+        names = [f"{p['name']}:{p['version']}" for p in policies]
+        assert "to_remove:v1" not in names
     
     @pytest.mark.unit
     def test_list_policies(self, test_db):
         """Test listing multiple policies."""
         from maple.state import store
         
-        store.add_policy("policy1", "v1", "/p1", "org/p1")
-        store.add_policy("policy2", "v2", "/p2", "org/p2")
-        store.add_policy("policy1", "v2", "/p1v2", "org/p1")
+        store.add_policy("policy1", "img1", "v1", "/p1", "org/p1")
+        store.add_policy("policy2", "img2", "v2", "/p2", "org/p2")
+        store.add_policy("policy1", "img1", "v2", "/p1v2", "org/p1")
         
         policies = store.list_policies()
         
         assert len(policies) == 3
-        assert "policy1:v1" in policies
-        assert "policy1:v2" in policies
-        assert "policy2:v2" in policies
+        names = [f"{p['name']}:{p['version']}" for p in policies]
+        assert "policy1:v1" in names
+        assert "policy1:v2" in names
+        assert "policy2:v2" in names
 
 
 class TestEnvStore:
@@ -80,17 +95,18 @@ class TestEnvStore:
     
     @pytest.mark.unit
     def test_add_env(self, test_db):
-        """Test adding an environment."""
+        """Test adding an environment to the store."""
         from maple.state import store
         
         store.add_env("libero", "maple/libero:latest")
         
         envs = store.list_envs()
-        assert "libero" in envs
+        names = [e["name"] for e in envs]
+        assert "libero" in names
     
     @pytest.mark.unit
     def test_get_env(self, test_db):
-        """Test getting an environment."""
+        """Test retrieving an environment by name."""
         from maple.state import store
         
         store.add_env("test_env", "maple/test:v1")
@@ -103,22 +119,26 @@ class TestEnvStore:
     
     @pytest.mark.unit
     def test_remove_env(self, test_db):
-        """Test removing an environment."""
+        """Test removing an environment from the store."""
         from maple.state import store
         
         store.add_env("to_remove", "maple/remove:latest")
-        assert "to_remove" in store.list_envs()
+        envs = store.list_envs()
+        names = [e["name"] for e in envs]
+        assert "to_remove" in names
         
         store.remove_env("to_remove")
-        assert "to_remove" not in store.list_envs()
+        envs = store.list_envs()
+        names = [e["name"] for e in envs]
+        assert "to_remove" not in names
 
 
 class TestContainerStore:
-    """Tests for container storage functions."""
+    """Tests for container state management."""
     
     @pytest.mark.unit
     def test_add_container(self, test_db):
-        """Test adding a container."""
+        """Test adding a container record."""
         from maple.state import store
         
         store.add_container(
@@ -134,7 +154,7 @@ class TestContainerStore:
         
         containers = store.list_containers(type="policy")
         assert len(containers) == 1
-        assert containers[0]["container_id"] == "abc123"
+        assert containers[0]["id"] == "abc123"
     
     @pytest.mark.unit
     def test_update_container_status(self, test_db):
@@ -158,7 +178,7 @@ class TestContainerStore:
     
     @pytest.mark.unit
     def test_remove_container(self, test_db):
-        """Test removing a container."""
+        """Test removing a container record."""
         from maple.state import store
         
         store.add_container(
@@ -178,7 +198,7 @@ class TestContainerStore:
     
     @pytest.mark.unit
     def test_clear_containers(self, test_db):
-        """Test clearing all containers."""
+        """Test clearing all container records."""
         from maple.state import store
         
         store.add_container("c1", "policy", "n1", "b1", "h", 1, "ready")
@@ -194,7 +214,7 @@ class TestRunStore:
     
     @pytest.mark.unit
     def test_add_run(self, test_db):
-        """Test adding a run."""
+        """Test adding a run record."""
         from maple.state import store
         
         store.add_run(
@@ -213,7 +233,7 @@ class TestRunStore:
     
     @pytest.mark.unit
     def test_finish_run(self, test_db):
-        """Test finishing a run."""
+        """Test completing a run with results."""
         from maple.state import store
         
         store.add_run(
@@ -238,7 +258,7 @@ class TestRunStore:
         
         assert run["steps"] == 150
         assert run["total_reward"] == 1.0
-        assert run["success"] == True
+        assert run["success"] == 1  # SQLite stores as 0/1
         assert run["video_path"] == "/path/to/video.mp4"
     
     @pytest.mark.unit
@@ -260,7 +280,7 @@ class TestRunStore:
     
     @pytest.mark.unit
     def test_get_run_stats(self, test_db):
-        """Test getting run statistics."""
+        """Test computing run statistics."""
         from maple.state import store
         
         # Add some completed runs
