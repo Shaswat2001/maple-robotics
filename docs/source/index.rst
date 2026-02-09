@@ -164,6 +164,7 @@ Quick Links
    guides/installation
    guides/quickstart
    guides/configuration
+   guides/policies_envs
 
 .. toctree::
    :maxdepth: 2
@@ -179,12 +180,6 @@ Quick Links
    commands/remove
    commands/sync
    commands/config
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Reference
-
-   guides/policies_envs
 
 .. toctree::
    :maxdepth: 2
