@@ -106,20 +106,9 @@ maple report results/
 
 ---
 
-## Supported Policies
+## Supported Policies and Environments
 
-| Policy | Variants | Status |
-|--------|----------|--------|
-| OpenVLA | 7B | ✅ Supported |
-| SmolVLA | libero, base | ✅ Supported |
-| Octo | base, small | 🚧 Coming Soon |
-
-## Supported Environments
-
-| Environment | Task Suites | Status |
-|-------------|-------------|--------|
-| LIBERO | libero_10, libero_90, spatial, object, goal | ✅ Supported |
-| SimplerEnv | google_robot, widowx | 🚧 Coming Soon |
+All the list of supported environments and policies can be Found - [Policies & Environments Reference](https://maple-robotics.readthedocs.io/en/latest/guides/policy_envs.html). Feel free to suggest any specific policy or environment you would like to be added in the repository.
 
 ---
 

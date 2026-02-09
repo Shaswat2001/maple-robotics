@@ -152,7 +152,6 @@ All the list of supported environments and policies can be Found - :doc:`guides/
 Feel free to suggest any specific policy or environment you would like to be added in the repository.
 
 
-
 ----
 
 Quick Links
@@ -185,7 +184,7 @@ Quick Links
    :maxdepth: 2
    :caption: Reference
 
-   guides/policies-envs
+   guides/policies_envs
 
 .. toctree::
    :maxdepth: 2
