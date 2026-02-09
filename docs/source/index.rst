@@ -145,35 +145,13 @@ Architecture
 
 ----
 
-Supported Policies
-==================
+Supported Policies and Envs
+===========================
 
-+------------+---------------------------+------------------+
-| Policy     | Variants                  | Status           |
-+============+===========================+==================+
-| OpenVLA    | 7B                        | ✅ Supported     |
-+------------+---------------------------+------------------+
-| SmolVLA    | libero, base              | ✅ Supported     |
-+------------+---------------------------+------------------+
-| Octo       | base, small               | 🚧 Coming Soon   |
-+------------+---------------------------+------------------+
-| RT-1/RT-2  | -                         | 📋 Planned       |
-+------------+---------------------------+------------------+
+All the list of supported environments and policies can be Found - :doc:`guides/policy_envs`. 
+Feel free to suggest any specific policy or environment you would like to be added in the repository.
 
-Supported Environments
-======================
 
-+-------------+---------------------------+------------------+
-| Environment | Task Suites               | Status           |
-+=============+===========================+==================+
-| LIBERO      | libero_10, libero_90, ... | ✅ Supported     |
-+-------------+---------------------------+------------------+
-| SimplerEnv  | google_robot, widowx      | 🚧 Coming Soon   |
-+-------------+---------------------------+------------------+
-| RoboCasa    | -                         | 📋 Planned       |
-+-------------+---------------------------+------------------+
-| ManiSkill   | -                         | 📋 Planned       |
-+-------------+---------------------------+------------------+
 
 ----
 
@@ -202,6 +180,12 @@ Quick Links
    commands/remove
    commands/sync
    commands/config
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference
+
+   guides/policies-envs
 
 .. toctree::
    :maxdepth: 2
