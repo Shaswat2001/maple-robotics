@@ -60,7 +60,7 @@ class GR00TN15Policy(PolicyBackend):
     """
     
     name = "groot"
-    _image = "maplerobotics/groot:latest"
+    _image = "maplerobotics/grootn1.5:latest"
     
     # Map version strings to HuggingFace repository paths
     _hf_repos = {
