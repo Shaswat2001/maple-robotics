@@ -65,14 +65,17 @@ class GR00TN15Policy(PolicyBackend):
     # Map version strings to HuggingFace repository paths
     _hf_repos = {
         "libero_spatial": "Tacoin/GR00T-N1.5-3B-LIBERO-SPATIAL",
+        "bridge": "ShuaiYang03/GR00T-N1.5-Lerobot-SimplerEnv-BridgeV2"
     }
 
     _embodiment_tags = {
-        "libero_spatial": "new_embodiment"
+        "libero_spatial": "new_embodiment",
+        "bridge": "oxe"
     }
 
     _data_configs = {
-        "libero_spatial": "examples.Libero.custom_data_config:LiberoDataConfig"
+        "libero_spatial": "examples.Libero.custom_data_config:LiberoDataConfig",
+        "bridge": "examples.SimplerEnv.new_data_config:BridgeDataConfig"
     }
     
     _container_port: int = 8000

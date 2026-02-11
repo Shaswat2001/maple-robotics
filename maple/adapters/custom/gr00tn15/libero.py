@@ -24,10 +24,10 @@ class Gr00tN15LiberoAdapter(Adapter):
     image_size = (256, 256)
 
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
-        """Method to transform libero observation to openPI input
+        """Method to transform libero observation to Gr00t input
 
         :param raw_obs: Raw observation from libero
-        :return: Tranformed observatation as needed by openPI
+        :return: Tranformed observatation as needed by Gr00t
         """
         payload = {}
         for vla_key, key in self.image_key.items():
@@ -53,9 +53,9 @@ class Gr00tN15LiberoAdapter(Adapter):
         return payload
     
     def transform_action(self, raw_action: List[float]) -> List[float]:
-        """Method to transform openPI output to libero action.
+        """Method to transform Gr00t output to libero action.
         
-        :param raw_action: Raw output from openPI.
+        :param raw_action: Raw output from Gr00t.
         :return: Tranformed action needed by the libero.
         """
         action = np.array(raw_action, dtype=np.float64)
