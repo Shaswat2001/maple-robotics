@@ -35,7 +35,7 @@ class Gr00tN15LiberoAdapter(Adapter):
             image = self.decode_image(raw_obs[key])
             image = self.resize_image(image, self.image_size)
             image = self.rotate_image(image)
-            payload[vla_key] = np.expand_dims(image, axis=[0]),
+            payload[vla_key] = image
 
 
         xyz = np.expand_dims(np.array(raw_obs["robot0_eef_pos"]["data"]), axis=[0])
