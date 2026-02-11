@@ -5,7 +5,7 @@ POLICY_BACKENDS: Simple dict mapping "policy" → Policy backend class.
 ENV_BACKENDS: Simple dict mapping "env" → Environment backend class.
 """
 
-from .policy import OpenVLAPolicy, SmolVLAPolicy, OpenPIPolicy
+from .policy import OpenVLAPolicy, SmolVLAPolicy, OpenPIPolicy, GR00TN15Policy
 from .envs import LiberoEnvBackend, RoboCasaEnvBackend, FractalBackend, BridgeBackend, AlohaSimBackend
 
 ENV_BACKENDS = {
@@ -19,5 +19,6 @@ ENV_BACKENDS = {
 POLICY_BACKENDS = {
     "openvla": OpenVLAPolicy,
     "smolvla": SmolVLAPolicy,
-    "openpi": OpenPIPolicy
+    "openpi": OpenPIPolicy,
+    "gr00tn15": GR00TN15Policy
 }
