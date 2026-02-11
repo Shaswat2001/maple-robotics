@@ -20,7 +20,7 @@ class Gr00tN15LiberoAdapter(Adapter):
     name: str = "gr00tn15:libero"
     env: str = "libero"
     policy: str = "gr00tn15"
-    image_key: Dict[str, str] = {"video.image":"agentview_image", "video.wrist_image": "robot0_eye_in_hand_image"}
+    image_key: Dict[str, str] = {"observation.images.video.image":"agentview_image", "observation.images.video.wrist_image": "robot0_eye_in_hand_image"}
     image_size = (256, 256)
 
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
