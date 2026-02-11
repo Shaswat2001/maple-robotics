@@ -220,25 +220,12 @@ class GR00TN15Policy(PolicyBackend):
         observations = {}
         for key, value in payload.items():
             # Normalize key names to GR00T format
-            normalized_key = key
-            if not key.startswith("observation."):
-                if "image" in key.lower():
-                    normalized_key = f"observation.images.{key}"
-                elif key == "state":
-                    normalized_key = "observation.state"
             
             if "image" in key.lower():
                 # Base64 encode image data
-                observations[normalized_key] = self._encode_image(value) if not isinstance(value, str) else value
+                observations[key] = self._encode_image(value) if not isinstance(value, str) else value
             else:
-                # Pass through non-image data (e.g., robot state/proprioception)
-                # Convert numpy arrays or lists to plain lists
-                if hasattr(value, 'tolist'):
-                    observations[normalized_key] = value.tolist()
-                elif isinstance(value, list):
-                    observations[normalized_key] = value
-                else:
-                    observations[normalized_key] = value
+                observations[key] = value
         
         # Build request payload matching server's ActRequest schema
         request_payload = {

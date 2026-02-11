@@ -20,7 +20,7 @@ class Gr00tN15LiberoAdapter(Adapter):
     name: str = "gr00tn15:libero"
     env: str = "libero"
     policy: str = "gr00tn15"
-    image_key: Dict[str, str] = {"observation.images.video.image":"agentview_image", "observation.images.video.wrist_image": "robot0_eye_in_hand_image"}
+    image_key: Dict[str, str] = {"video.image":"agentview_image", "video.wrist_image": "robot0_eye_in_hand_image"}
     image_size = (256, 256)
 
     def transform_obs(self, raw_obs: Dict[str, Any]) -> Dict[str, Any]:
@@ -38,17 +38,17 @@ class Gr00tN15LiberoAdapter(Adapter):
             payload[vla_key] = image
 
 
-        xyz = np.expand_dims(np.array(raw_obs["robot0_eef_pos"]["data"]), axis=[0])
-        rpy = np.expand_dims(self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"])), axis=[0])
-        gripper = np.expand_dims(np.array(raw_obs["robot0_gripper_qpos"]["data"]), axis=[0])
+        xyz = np.array(raw_obs["robot0_eef_pos"]["data"])
+        rpy = self.quat2axisangle(np.array(raw_obs["robot0_eef_quat"]["data"]))
+        gripper = np.array(raw_obs["robot0_gripper_qpos"]["data"])
         
-        payload["state.x"] = xyz[:, 0:1].astype(np.float64)
-        payload["state.y"] = xyz[:, 1:2].astype(np.float64)
-        payload["state.z"] = xyz[:, 2:3].astype(np.float64)
-        payload["state.roll"] = rpy[:, 0:1].astype(np.float64)
-        payload["state.pitch"] = rpy[:, 1:2].astype(np.float64)
-        payload["state.yaw"] = rpy[:, 2:3].astype(np.float64)
-        payload["state.gripper"] = gripper[:, 0:1].astype(np.float64)
+        payload["state.x"] = xyz[0:1].tolist()
+        payload["state.y"] = xyz[1:2].tolist()
+        payload["state.z"] = xyz[2:3].tolist()
+        payload["state.roll"] = rpy[0:1].tolist()
+        payload["state.pitch"] = rpy[1:2].tolist()
+        payload["state.yaw"] = rpy[2:3].tolist()
+        payload["state.gripper"] = gripper[0:1].tolist()
               
         return payload
     
