@@ -48,6 +48,7 @@ from maple.utils.health import HealthMonitor, HealthStatus
 from maple.utils.lock import DaemonLock, is_daemon_running
 from maple.backend.registry import POLICY_BACKENDS, ENV_BACKENDS
 from maple.utils.cleanup import CleanupManager, register_cleanup_handler
+from maple.utils.timeout import run_with_timeout, TimeoutError, OperationTimer
 
 log = get_logger("daemon")
 
@@ -64,6 +65,8 @@ class RunRequest(BaseModel):
     env_kwargs: Optional[Dict[str, Any]] = {}
     save_video: bool = False
     video_dir: Optional[str] = None
+    step_timeout: float = 60.0  # Timeout per step in seconds
+    setup_timeout: float = 30.0  # Timeout for env setup/reset
 
 class PullPolicyRequest(BaseModel):
     """Request model for pulling a policy."""
@@ -261,12 +264,22 @@ class VLADaemon:
 
             try:
                 # Setup environment with task
-                setup_result = env_backend.setup(
-                    handle=env_handle,
-                    task=req.task,
-                    seed=req.seed,
-                    env_kwargs=req.env_kwargs
-                )
+                try:
+                    setup_result = run_with_timeout(
+                        lambda: env_backend.setup(
+                            handle=env_handle,
+                            task=req.task,
+                            seed=req.seed,
+                            env_kwargs=req.env_kwargs
+                        ),
+                        timeout=req.setup_timeout,
+                        operation="Environment setup"
+                    )
+                except TimeoutError as e:
+                    raise HTTPException(
+                        status_code=504,
+                        detail=f"Environment setup timed out after {req.setup_timeout}s. The environment may be unresponsive."
+                    )
 
                 # Get instruction from request or task default
                 instruction = req.instruction or setup_result.get("instruction", "")
@@ -274,7 +287,19 @@ class VLADaemon:
                     raise HTTPException(status_code=400, detail="No instruction provided and task has no default instruction")
                 
                 # Reset environment and get initial observation
-                observation = env_backend.reset(handle=env_handle, seed=req.seed).get("observation", {})
+                try:
+                    reset_result = run_with_timeout(
+                        lambda: env_backend.reset(handle=env_handle, seed=req.seed),
+                        timeout=req.setup_timeout,
+                        operation="Environment reset"
+                    )
+                    observation = reset_result.get("observation", {})
+                except TimeoutError as e:
+                    raise HTTPException(
+                        status_code=504,
+                        detail=f"Environment reset timed out after {req.setup_timeout}s. The environment may be unresponsive."
+                    )
+                
                 total_reward = 0
                 frames = []  # For video recording
 
@@ -294,18 +319,42 @@ class VLADaemon:
                         frames.append(self.get_image(payload))
 
                     # Get action from policy
-                    raw_action = policy_backend.act(
-                        handle=policy_handle,
-                        payload=payload,  # base64 encoded, resized by adapter
-                        instruction=instruction,
-                        model_kwargs=req.model_kwargs,
-                    )
+                    try:
+                        raw_action = run_with_timeout(
+                            lambda: policy_backend.act(
+                                handle=policy_handle,
+                                payload=payload,
+                                instruction=instruction,
+                                model_kwargs=req.model_kwargs,
+                            ),
+                            timeout=req.step_timeout,
+                            operation="Policy inference"
+                        )
+                    except TimeoutError as e:
+                        log.error(f"Policy inference timed out at step {step}")
+                        raise HTTPException(
+                            status_code=504,
+                            detail=f"Policy inference timed out at step {step} after {req.step_timeout}s. "
+                                   f"The policy container may be unresponsive or overloaded."
+                        )
                     
                     # Transform action to environment format
                     env_action = adapter.transform_action(raw_action)
                     
                     # Step environment with transformed action
-                    step_result = env_backend.step(handle=env_handle, action=env_action)
+                    try:
+                        step_result = run_with_timeout(
+                            lambda: env_backend.step(handle=env_handle, action=env_action),
+                            timeout=req.step_timeout,
+                            operation="Environment step"
+                        )
+                    except TimeoutError as e:
+                        log.error(f"Environment step timed out at step {step}")
+                        raise HTTPException(
+                            status_code=504,
+                            detail=f"Environment step timed out at step {step} after {req.step_timeout}s. "
+                                   f"The environment container may be unresponsive."
+                        )
                     
                     # Extract step results
                     observation = step_result.get("observation", {})

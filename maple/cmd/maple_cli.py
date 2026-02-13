@@ -36,14 +36,14 @@ import typer
 import requests
 from rich import print
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from maple.utils.config import get_config, load_config
 from maple.utils.logging import setup_logging, get_logger
 from maple.utils.misc import daemon_url, parse_error_response, load_kwargs
 from maple.utils.eval import BatchEvaluator, format_results_markdown, format_results_csv
-from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app, remove_app, sync_app
+from maple.cmd.cli import pull_app, serve_app, list_app, env_app, config_app, policy_app, remove_app, sync_app, doctor_app, logs_app
 
 log = get_logger("cli")
 
@@ -87,6 +87,8 @@ app.add_typer(policy_app, name="policy")
 app.add_typer(config_app, name="config", help="Configuration management")
 app.add_typer(sync_app, name="sync", help="Update the database if manually deleted")
 app.add_typer(remove_app, name="remove", help="Remove policy and env")
+app.add_typer(doctor_app, name="doctor", help="Run system diagnostics")
+app.add_typer(logs_app, name="logs", help="View container and daemon logs")
 
 @app.command("run")
 def run(

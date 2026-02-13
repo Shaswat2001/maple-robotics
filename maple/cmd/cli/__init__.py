@@ -10,3 +10,5 @@ from .policy import policy_app
 from .config import config_app
 from .rmv import remove_app
 from .snc import sync_app
+from .doctor import doctor_app
+from .logs import logs_app
