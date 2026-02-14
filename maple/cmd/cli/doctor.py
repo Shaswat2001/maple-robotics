@@ -287,7 +287,7 @@ def check_port(port: int) -> DiagnosticResult:
         
         if result == 0:
             # Port is in use - check if it's MAPLE daemon
-            if is_daemon_running(port):
+            if is_daemon_running():
                 return DiagnosticResult(
                     name=f"Port {port}",
                     passed=True,
@@ -319,7 +319,7 @@ def check_daemon() -> DiagnosticResult:
     config = get_config()
     port = config.daemon.port
     
-    if is_daemon_running(port):
+    if is_daemon_running():
         try:
             import requests
             r = requests.get(f"http://localhost:{port}/health", timeout=5)
