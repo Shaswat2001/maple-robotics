@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ServeCmd = &cobra.Command{
+var serveCmd = &cobra.Command{
 	Use: "serve",
 	Short: "Start the MAPLE server",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -15,6 +15,6 @@ var ServeCmd = &cobra.Command{
 }
 
 func init() {
-	ServeCmd.Flags().IntP("port", "p", 11434, "port to listen on")
-	rootCmd.AddCommand(ServeCmd)
+	serveCmd.Flags().IntP("port", "p", 11434, "port to listen on")
+	rootCmd.AddCommand(serveCmd)
 }

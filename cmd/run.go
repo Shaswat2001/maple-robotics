@@ -5,9 +5,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-car RunCmd = &cobra.Command{
+var runCmd = &cobra.Command{
 	Use: "run MODEL ENV",
-	Short: "Run a model and environment"
+	Short: "Run a model and environment",
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		model := args[0]
