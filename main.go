@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/maple-robotics/maple/cmd"
+)
 
 func main() {
-	fmt.Println("maple")
+	cmd.Execute()
 }
