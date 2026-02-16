@@ -12,7 +12,6 @@ import (
 
 // BlobPath returns the path for a given digest
 func BlobPath(digest string) (string, error) {
-
 	dir, err := BlobsDir()
 	if err != nil {
 		return "", err
@@ -22,9 +21,8 @@ func BlobPath(digest string) (string, error) {
 	return filepath.Join(dir, name), nil
 }
 
-// BlobExists check if blob exists
+// BlobExists checks if a blob exists
 func BlobExists(digest string) (bool, error) {
-
 	path, err := BlobPath(digest)
 	if err != nil {
 		return false, err
@@ -33,7 +31,6 @@ func BlobExists(digest string) (bool, error) {
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-
 	return err == nil, err
 }
 
@@ -66,28 +63,30 @@ func WriteBlob(r io.Reader) (string, int64, error) {
 		return "", 0, err
 	}
 
+	// Write to temp file while hashing
 	tmp, err := os.CreateTemp(dir, "tmp-")
 	if err != nil {
 		return "", 0, err
 	}
 	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
 
 	hasher := sha256.New()
 	writer := io.MultiWriter(tmp, hasher)
 
 	size, err := io.Copy(writer, r)
+	tmp.Close() // Close before rename or delete
+
 	if err != nil {
-		tmp.Close()
+		os.Remove(tmpPath) // Clean up on error
 		return "", 0, err
 	}
-	tmp.Close()
 
 	// Compute digest and move to final path
 	digest := fmt.Sprintf("sha256-%s", hex.EncodeToString(hasher.Sum(nil)))
 	finalPath := filepath.Join(dir, digest)
 
 	if err := os.Rename(tmpPath, finalPath); err != nil {
+		os.Remove(tmpPath) // Clean up on error
 		return "", 0, err
 	}
 
