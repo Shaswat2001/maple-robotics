@@ -5,15 +5,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/maple-robotics/maple/storage"
 )
 
 // Number of parallel downloads
 const maxParallel = 4
+
+// Docker images for each architecture
+var archImages = map[string]string{
+	"openvla": "maplerobotics/openvla:latest",
+	"smolvla": "maplerobotics/smolvla:latest",
+	"groot":   "maplerobotics/groot:latest",
+	"octo":    "maplerobotics/octo:latest",
+	"openpi":  "maplerobotics/openpi:latest",
+}
 
 // Known models and their HuggingFace repos
 var knownModels = map[string]string{
@@ -79,6 +88,20 @@ func (r *Registry) Pull(ref string, progress func(status string, completed, tota
 		hfRepo = ref
 	}
 
+	// Determine architecture
+	arch := name
+	if cfg, ok := modelConfigs[fullRef]; ok {
+		arch = cfg.Architecture
+	}
+
+	// Pull Docker image first
+	if image, ok := archImages[arch]; ok {
+		progress(fmt.Sprintf("pulling docker image %s", image), 0, 0)
+		if err := pullDockerImage(image); err != nil {
+			return fmt.Errorf("failed to pull docker image: %w", err)
+		}
+	}
+
 	progress(fmt.Sprintf("pulling %s from %s", fullRef, hfRepo), 0, 0)
 
 	// Get list of files from HuggingFace
@@ -87,59 +110,21 @@ func (r *Registry) Pull(ref string, progress func(status string, completed, tota
 		return fmt.Errorf("failed to list files: %w", err)
 	}
 
-	// Download files in parallel
-	type result struct {
-		index int
-		layer storage.Layer
-		err   error
-	}
-
-	results := make([]storage.Layer, len(files))
-	resultCh := make(chan result, len(files))
-	sem := make(chan struct{}, maxParallel) // Limit concurrency
-
-	var wg sync.WaitGroup
+	// Download files sequentially with progress
+	var layers []storage.Layer
 	for i, file := range files {
-		wg.Add(1)
-		go func(idx int, f HFFile) {
-			defer wg.Done()
-			sem <- struct{}{}        // Acquire
-			defer func() { <-sem }() // Release
+		progress(fmt.Sprintf("pulling %s (%d/%d)", file.Name, i+1, len(files)), 0, 0)
 
-			progress(fmt.Sprintf("pulling %s", f.Name), 0, 0)
-
-			digest, size, err := r.pullFile(hfRepo, f, func(status string, completed, total int64) {
-				// Per-file progress (could aggregate later)
-				if status == "downloading" && total > 0 {
-					progress(fmt.Sprintf("pulling %s", f.Name), completed, total)
-				}
-			})
-
-			if err != nil {
-				resultCh <- result{idx, storage.Layer{}, err}
-				return
-			}
-
-			resultCh <- result{idx, storage.Layer{
-				MediaType: mediaTypeForFile(f.Name),
-				Digest:    digest,
-				Size:      size,
-			}, nil}
-		}(i, file)
-	}
-
-	// Wait for all downloads
-	go func() {
-		wg.Wait()
-		close(resultCh)
-	}()
-
-	// Collect results
-	for res := range resultCh {
-		if res.err != nil {
-			return fmt.Errorf("failed to pull: %w", res.err)
+		digest, size, err := r.pullFile(hfRepo, file, progress)
+		if err != nil {
+			return fmt.Errorf("failed to pull %s: %w", file.Name, err)
 		}
-		results[res.index] = res.layer
+
+		layers = append(layers, storage.Layer{
+			MediaType: mediaTypeForFile(file.Name),
+			Digest:    digest,
+			Size:      size,
+		})
 	}
 
 	// Create config
@@ -164,7 +149,7 @@ func (r *Registry) Pull(ref string, progress func(status string, completed, tota
 			Digest:    cfgDigest,
 			Size:      cfgSize,
 		},
-		Layers: results,
+		Layers: layers,
 	}
 
 	progress("writing manifest", 0, 0)
@@ -276,6 +261,11 @@ func mediaTypeForFile(name string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+func pullDockerImage(image string) error {
+	cmd := exec.Command("docker", "pull", image)
+	return cmd.Run()
 }
 
 // progressReader wraps a reader to track progress
